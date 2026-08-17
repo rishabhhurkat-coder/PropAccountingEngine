@@ -5,6 +5,7 @@ venv/
 
 # Secrets and local configuration
 Credentials/.env
+Credentials/.env.decrypted
 Credentials/*.enc
 Credentials/*.gpg
 Credentials/*.key

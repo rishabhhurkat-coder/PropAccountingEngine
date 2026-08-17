@@ -1,0 +1,5 @@
+import { formatINR, useReportData } from './report-data';
+const heatmapMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+import { ReportCard } from './report-card';
+function cellColor(value:number|null) { if (value===null) return '#fbfcfe'; const t=Math.min(Math.abs(value)/200000,1); return value>=0 ? `color-mix(in srgb,#2dbd83 ${10+t*55}%,#fff)` : `color-mix(in srgb,#ef4444 ${10+t*55}%,#fff)`; }
+export function MonthlyHeatmap() { const { heatmap } = useReportData(); return <ReportCard title="Monthly P&L Heatmap" subtitle="(All Strategies)"><div className="v0-heatmap-wrap"><table className="v0-heatmap"><thead><tr><th>Year</th>{heatmapMonths.map((m)=><th key={m}>{m}</th>)}<th>Total</th></tr></thead><tbody>{heatmap.map(row=><tr key={row.year}><td>{row.year}</td>{row.values.map((value,index)=><td key={index} style={{background:cellColor(value)}}>{value===null?'-':formatINR(value)}</td>)}<td>{formatINR(row.total)}</td></tr>)}</tbody></table></div><div className="v0-heat-legend"><span>-₹2L</span><i/><span>₹0</span><span className="right">₹2L+</span></div></ReportCard>; }

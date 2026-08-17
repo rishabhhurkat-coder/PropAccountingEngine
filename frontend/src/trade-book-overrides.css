@@ -1,0 +1,72 @@
+.reference-add-button{display:none!important}
+.reference-date-button{display:none!important}
+.reference-trade-header h1{color:#155eef;font-size:31px}
+.app-shell.trade-book-page .alloc-brand{
+  transform:translateX(-5%)!important;
+}
+.app-shell.trade-book-page .alloc-sidebar .alloc-nav-section:last-of-type .alloc-nav-item,
+.app-shell.trade-book-page .alloc-sidebar .alloc-nav-section:last-of-type .alloc-nav-text{
+  font-weight:500!important;
+}
+.reference-table th:nth-child(3),.reference-table td:nth-child(3){display:none}
+.reference-table th:nth-child(1),.reference-table td:nth-child(1),
+.reference-table th:nth-child(2),.reference-table td:nth-child(2),
+.reference-table th:nth-child(6),.reference-table td:nth-child(6),
+.reference-table th:nth-child(7),.reference-table td:nth-child(7),
+.reference-table th:nth-child(9),.reference-table td:nth-child(9),
+.reference-table th:nth-child(10),.reference-table td:nth-child(10){color:#000!important}
+.app-shell.trade-book-page{padding-bottom:0}
+.app-shell.trade-book-page .reference-main{
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding-top:10.92px;
+}
+.app-shell.trade-book-page .reference-trade-card{
+  width:100%;
+  padding-left:24px;
+  padding-right:24px;
+  min-height:min(590px, calc(100vh - 120px));
+}
+.app-page>.reference-shell>.reference-main{display:flex;flex-direction:column;min-height:0}
+.reference-trade-card{display:flex;flex:1;flex-direction:column;min-height:0}
+.reference-table-wrap{flex:1;min-height:0;overflow:auto}
+.reference-filter-card{overflow:visible}
+.reference-trade-header{margin-bottom:11.55px}
+.reference-filter-card{margin-bottom:8.72px}
+.reference-filter-card{height:96px}
+.reference-filter-field{height:63px}
+.reference-filter-field>span{font-size:15.6px}
+.reference-filter-field select,.reference-filter-field.date-field div{font-size:19.5px}
+.reference-filter-field>svg{bottom:20px}
+.reference-search-field,.reference-more-filters,.reference-settings-button{height:51px;font-size:19.5px}
+.reference-search-field input{font-size:19.5px}
+.reference-tabs button{font-size:15px}
+.reference-tabs button span{font-size:12px}
+.reference-filter-field.reference-dropdown-field{position:relative;z-index:2}
+.reference-date-input-wrap{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.reference-date-input-wrap input{flex:1;border:0;outline:0;background:transparent;color:#172e58;font:600 12px 'DM Sans';padding:0}
+.reference-dropdown-button{width:100%;border:0;background:transparent;color:#172e58;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0;cursor:pointer;font:600 12px 'DM Sans';text-align:left}
+.reference-dropdown-button strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:inherit}
+.reference-dropdown-menu{position:absolute;left:-1px;right:-1px;top:calc(100% + 6px);z-index:30;max-height:220px;overflow:auto;background:#fff;border:1px solid #dfe6f0;border-radius:8px;box-shadow:0 12px 24px rgba(40,61,98,.12);padding:5px}
+.reference-dropdown-option{width:100%;border:0;background:#fff;color:#20355f;text-align:left;padding:8px 10px;border-radius:6px;font:600 12px 'DM Sans';cursor:pointer}
+.reference-dropdown-option:hover,.reference-dropdown-option.active{background:#eef3ff;color:#2e62ed}
+
+.reference-table th,.reference-table th .reference-sort-button{text-transform:uppercase!important}
+.reference-tradebook-table{table-layout:fixed;min-width:0;width:100%}
+.reference-tradebook-table col.trade-col-trade-id{width:0;display:none}
+.reference-tradebook-table col.trade-col-pl-amt{display:table-column}
+.reference-table th,.reference-tradebook-table.without-pl-amt th,.reference-tradebook-table.with-pl-amt th{text-align:left!important;font-weight:700!important;color:#155eef!important}
+.reference-table th:nth-child(8),.reference-table th:nth-child(9),.reference-table th:nth-child(10),.reference-table th:nth-child(11){text-align:left!important}
+.reference-table,.reference-tradebook-table.without-pl-amt,.reference-tradebook-table.with-pl-amt{font-size:11px}
+.reference-table th,.reference-tradebook-table.without-pl-amt th,.reference-tradebook-table.with-pl-amt th{height:35px;padding:0 10px;font-size:10px;vertical-align:middle;white-space:nowrap}
+.reference-table th .reference-sort-button{display:inline-flex;align-items:center;justify-content:flex-start;gap:4px;font-weight:700!important;line-height:1;vertical-align:middle}
+.reference-table th .reference-sort-button span{display:inline-flex;align-items:center;justify-content:center;width:10px;height:12px;line-height:1;font-size:10px;margin:0;text-align:center}
+.reference-table td,.reference-tradebook-table.without-pl-amt td,.reference-tradebook-table.with-pl-amt td{height:56px;padding:0 10px;text-align:left!important;font-size:11px;vertical-align:middle;border-bottom-color:#e4e7ec}
+.reference-table td:nth-child(8),.reference-table td:nth-child(9),.reference-table td:nth-child(10),.reference-table td:nth-child(11){text-align:left!important}
+.reference-tradebook-table th:first-child,.reference-tradebook-table td:first-child{padding-left:14px}
+.reference-tradebook-table th,.reference-tradebook-table td{overflow:hidden;text-overflow:ellipsis}
+.reference-tradebook-table .reference-row-actions{justify-content:flex-start}
+.reference-tradebook-table .reference-side-badge,.reference-tradebook-table .reference-option-badge,.reference-tradebook-table .reference-status,.reference-tradebook-table .reference-strategy{font-size:9px}
+.reference-tradebook-table .reference-strategy{display:inline-flex;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;justify-content:flex-start}
+.reference-tradebook-table .reference-row-actions>button,.reference-tradebook-table .reference-menu-wrap>button{margin-left:0}

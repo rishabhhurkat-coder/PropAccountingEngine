@@ -1,0 +1,11 @@
+.app-shell{min-height:100vh;background:#f8faff}
+.app-page{flex:1;min-width:0;min-height:100vh;overflow-x:hidden}
+.app-page>.workspace-shell,.app-page>.reference-shell,.app-page>.alloc-shell{width:100%;min-height:100vh}
+.app-page>.workspace-shell{background:#fcfdff}
+.app-page>.reference-shell{background:#f8faff}
+.app-page>.alloc-shell{background:#fcfdff}
+.app-page>.workspace-shell>.workspace-main,.app-page>.reference-shell>.reference-main,.app-page>.alloc-shell>.alloc-main{max-width:none}
+.app-page>.workspace-shell>.workspace-main{padding:28px 20px 36px}
+.app-page>.reference-shell>.reference-main{padding:28px 20px 36px}
+.app-page>.alloc-shell>.alloc-main{padding:28px 20px 36px}
+@media(max-width:800px){.app-page>.workspace-shell>.workspace-main,.app-page>.reference-shell>.reference-main,.app-page>.alloc-shell>.alloc-main{padding:18px 12px 28px}}

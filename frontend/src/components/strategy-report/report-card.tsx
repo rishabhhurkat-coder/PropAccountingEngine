@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react';
+export function ReportCard({ title, subtitle, action, children, className = '' }: { title: string; subtitle?: string; action?: ReactNode; children: ReactNode; className?: string }) { return <section className={`v0-report-card ${className}`}><header className="v0-card-head"><h2>{title}{subtitle && <small>{subtitle}</small>}</h2>{action}</header><div className="v0-card-body">{children}</div></section>; }

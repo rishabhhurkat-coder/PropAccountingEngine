@@ -1,0 +1,135 @@
+/* Keep Positions visually aligned with Strategy Allocation. */
+.positions-main {
+  padding: 24px 19px 40px;
+  max-width: none;
+}
+
+.positions-header {
+  margin: 0 1px 11.76px;
+}
+
+.positions-header h1 {
+  font-size: 32px;
+  color: #155eef;
+  letter-spacing: -.025em;
+}
+
+.positions-feed-status,
+.positions-refresh {
+  height: 44px;
+  border-radius: 9px;
+}
+
+.positions-stat {
+  min-height: 101px;
+  gap: 13px;
+  padding: 19px 14px;
+  border-radius: 10px;
+}
+
+.positions-stat-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.positions-card {
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.positions-card-head {
+  height: auto;
+  padding: 14px 13px 11px;
+}
+
+.positions-table-wrap {
+  padding: 0 10px;
+  overflow-x: auto;
+}
+
+.positions-table {
+  min-width: 1320px;
+  border: 1px solid #e8edf5;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.positions-table th {
+  height: 35px;
+  color: #155eef;
+  font-weight: 600;
+}
+
+.positions-table td {
+  height: 43px;
+}
+
+/* Roomier table rows and 15% larger table type. */
+.positions-table {
+  font-size: 11.5px;
+}
+
+.positions-table th {
+  height: 49px;
+  font-size: 10.35px;
+}
+
+.positions-table td {
+  height: 60px;
+}
+
+.positions-option,
+.positions-strategy {
+  font-size: 9.2px;
+}
+
+.positions-trade-badge,
+.positions-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 9.2px;
+  font-weight: 700;
+}
+
+.positions-trade-badge.buy {
+  background: #e9faf1;
+  border-color: #bfeeda;
+  color: #0b9b60;
+}
+
+.positions-trade-badge.sell {
+  background: #fff0f2;
+  border-color: #ffcbd3;
+  color: #ef4e64;
+}
+
+.positions-option.ce {
+  background: #fff0f2;
+  border-color: #ffcbd3;
+  color: #ef4e64;
+}
+
+.positions-option.pe {
+  background: #e9faf1;
+  border-color: #bfeeda;
+  color: #0b9b60;
+}
+
+@media (max-width: 620px) {
+  .positions-main {
+    padding: 16px 10px 30px;
+  }
+
+  .positions-header {
+    margin: 0 0 15px;
+  }
+
+  .positions-header h1 {
+    font-size: 28px;
+  }
+}

@@ -1,0 +1,492 @@
+.workspace-shell .raw-trades-table,
+.workspace-shell .raw-trades-table th,
+.workspace-shell .raw-trades-table td,
+.workspace-shell .raw-trades-table .table-mono,
+.workspace-shell .raw-trades-table .table-strong,
+.workspace-shell .raw-trades-table .table-source,
+.workspace-shell .raw-trades-table .side,
+.workspace-shell .raw-trades-table .option-pill {
+  color: #000 !important;
+}
+
+.raw-trade-import-page .workspace-main{
+  padding-top:4px;
+}
+
+.raw-trade-import-page .workspace-header{
+  margin-top:0;
+  margin-bottom:8px;
+}
+
+.raw-trade-import-page .workspace-header h1{
+  color:#155eef;
+}
+
+.raw-trade-import-page .alloc-brand-copy strong{
+  font-size:17.5px !important;
+}
+
+.raw-trade-import-page .alloc-brand-copy small{
+  font-size:15px !important;
+}
+
+.raw-trade-import-page .alloc-nav-label{
+  font-size:11.25px !important;
+}
+
+.raw-trade-import-page .alloc-nav-item{
+  font-size:13.75px !important;
+}
+
+.raw-trade-import-page .alloc-nav-item .alloc-nav-text{
+  font-size:13.75px !important;
+}
+
+.raw-trade-import-page .alloc-status strong{
+  font-size:13.75px !important;
+}
+
+.raw-trade-import-page .alloc-status span{
+  font-size:11.25px !important;
+}
+
+.raw-trade-import-page .alloc-status button{
+  font-size:13.75px !important;
+}
+
+.workspace-shell .raw-trades-table thead th {
+  color: #2f66ee !important;
+}
+
+.workspace-shell .raw-trades-table {
+  font-size: 11.9px;
+}
+
+.workspace-shell .raw-trades-table th {
+  font-size: 10.1px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.workspace-shell .raw-trades-table td {
+  font-size: 11.9px;
+}
+
+.workspace-shell .raw-trades-table .table-mono,
+.workspace-shell .raw-trades-table .table-strong,
+.workspace-shell .raw-trades-table .table-source {
+  font-size: 11.9px;
+}
+
+.workspace-shell .raw-trades-table .table-side,
+.workspace-shell .raw-trades-table .table-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 18px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 7.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .01em;
+  box-shadow: 0 1px 1px rgba(17, 39, 86, .03);
+}
+
+.workspace-shell .raw-trades-table .table-side.buy,
+.workspace-shell .raw-trades-table .table-option.ce {
+  background: #ecfbf3;
+  border-color: #c7eed7;
+  color: #18a66a;
+}
+
+.workspace-shell .raw-trades-table .table-side.sell,
+.workspace-shell .raw-trades-table .table-option.pe {
+  background: #fff1f3;
+  border-color: #ffd2da;
+  color: #ef5a69;
+}
+
+.raw-trade-import-page .alloc-brand-copy strong{
+  font-size:20px;
+}
+
+.raw-trade-import-page .alloc-brand-copy small{
+  font-size:15px;
+}
+
+.raw-trade-import-page .alloc-nav-label{
+  font-size:12px;
+}
+
+.raw-trade-import-page .alloc-nav-item{
+  font-size:15px;
+}
+
+.raw-trade-import-page .alloc-nav-item .alloc-nav-text{
+  font-size:15px;
+}
+
+.raw-trade-import-page .alloc-status strong{
+  font-size:14px;
+}
+
+.raw-trade-import-page .alloc-status span{
+  font-size:11px;
+}
+
+.raw-trade-import-page .alloc-status button{
+  font-size:14px;
+}
+
+.workspace-shell .workflow-hero {
+  padding-top: 13px;
+  padding-bottom: 10px;
+}
+
+.workspace-shell .workflow-hero.reference-stepper {
+  margin-top: 16px;
+  padding: 14px 18px 11px;
+}
+
+.workspace-shell .workflow-hero.reference-stepper .stepper-top {
+  gap: 5px;
+}
+
+.workspace-shell .workflow-hero.reference-stepper .stepper-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.workspace-shell .workflow-hero.reference-stepper .stepper-text strong {
+  font-size: 9.2px;
+}
+
+.workspace-shell .workflow-hero.reference-stepper .stepper-text small {
+  font-size: 8.1px;
+  margin-top: 3px;
+}
+
+.workspace-shell .workflow-hero.reference-stepper .stepper-check {
+  top: 29px;
+}
+
+.workspace-shell .workflow-hero.reference-stepper .stepper-active-line {
+  margin-top: 11px;
+}
+
+.workspace-shell .workflow-track {
+  min-height: 28px;
+}
+
+.workspace-shell .workflow-kicker {
+  margin-bottom: 8px;
+}
+
+.workspace-shell .workflow-state {
+  margin-top: 7px;
+}
+
+.workspace-shell .raw-table-toolbar--header {
+  margin-bottom: 0;
+  justify-content: flex-end;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.workspace-shell .raw-table-toolbar--header .smart-search-box {
+  flex: 0 0 25%;
+  width: 25%;
+  min-width: 260px;
+  max-width: 25%;
+}
+
+.workspace-shell .raw-table-toolbar--header .toolbar-select{
+  flex: none;
+}
+
+.workspace-shell .raw-allocation-filter {
+  height: 34px;
+  min-width: 132px;
+  border: 1px solid #dfe6f3;
+  border-radius: 8px;
+  background: #fff;
+  color: #294374;
+  padding: 0 10px;
+  font: 500 10px 'DM Sans', Arial, sans-serif;
+  cursor: pointer;
+}
+
+.workspace-shell .workspace-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.workspace-shell .pipeline-monitor {
+  border: 1px solid #d9e4fb;
+  background: linear-gradient(135deg, #f6f9ff 0%, #ffffff 55%, #f2f7ff 100%);
+  border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  position: relative;
+  box-shadow: 0 8px 20px rgba(58, 92, 158, 0.1);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.workspace-shell .workflow-card-head {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 0;
+  margin: 0;
+}
+
+.workspace-shell .workflow-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.workspace-shell .pipeline-monitor:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(58, 92, 158, 0.12);
+  border-color: #bfd1fb;
+}
+
+.stepper-file-picker {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: inherit;
+  background: transparent !important;
+  appearance: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.stepper-file-picker:hover {
+  background: transparent !important;
+  color: inherit;
+}
+
+.stepper-file-picker:focus-visible {
+  outline: 2px solid #315cef;
+  outline-offset: 3px;
+  border-radius: 50%;
+}
+
+.workspace-shell .pipeline-monitor-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: #315cef;
+  background: radial-gradient(circle at 30% 30%, #edf3ff 0%, #dfe9ff 55%, #c8d7ff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.workspace-shell .pipeline-monitor.running .pipeline-monitor-icon {
+  color: #116a4f;
+  background: radial-gradient(circle at 30% 30%, #ebfbf3 0%, #d0f7e4 55%, #b5ecd3 100%);
+  box-shadow: 0 0 0 6px rgba(21, 154, 104, 0.08);
+}
+
+.workspace-shell .pipeline-monitor::after {
+  content: '';
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #7890c7;
+  border: 2px solid #fff;
+}
+
+.workspace-shell .pipeline-monitor.running::after {
+  background: #0ca86d;
+  box-shadow: 0 0 0 3px rgba(12, 168, 109, 0.14);
+}
+
+.workspace-shell .btn.primary.icon-only {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2f66ee 0%, #1d52e6 100%);
+  box-shadow: 0 10px 20px rgba(47, 102, 238, 0.24);
+}
+
+.workspace-shell .pipeline-log-panel {
+  margin-top: 14px;
+  border: 1px solid #dce5f4;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-shadow: 0 14px 34px rgba(53, 81, 133, 0.08);
+  padding: 16px 18px 18px;
+}
+
+.pipeline-log-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(17, 31, 61, .34);
+}
+
+.pipeline-log-modal {
+  width: min(720px, 100%);
+  max-height: min(620px, calc(100vh - 48px));
+  margin: 0;
+  overflow: auto;
+  box-shadow: 0 24px 70px rgba(20, 37, 74, .24);
+}
+
+.pipeline-log-close {
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  border: 1px solid #e3e9f2;
+  border-radius: 7px;
+  background: #fff;
+  color: #6c7890;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.workspace-shell .pipeline-log-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.workspace-shell .pipeline-log-head h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.workspace-shell .pipeline-log-head p {
+  margin-top: 6px;
+  font-size: 11px;
+  max-width: 760px;
+}
+
+.workspace-shell .pipeline-log-status {
+  border-radius: 999px;
+  padding: 7px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.workspace-shell .pipeline-log-status.idle {
+  color: #5a6e90;
+  border: 1px solid #dce5f4;
+  background: #f8fbff;
+}
+
+.workspace-shell .pipeline-log-status.running {
+  color: #0b8f61;
+  border: 1px solid #bce8d1;
+  background: #ecfbf3;
+}
+
+.workspace-shell .pipeline-log-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  color: #6c7990;
+  font-size: 10px;
+}
+
+.workspace-shell .pipeline-log-meta span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f5f8fd;
+  border: 1px solid #e4ebf5;
+}
+
+.workspace-shell .pipeline-log-stream {
+  margin-top: 12px;
+  border: 1px solid #e2e8f2;
+  border-radius: 14px;
+  background: #09111f;
+  color: #d8e7ff;
+  padding: 12px 14px;
+  max-height: 220px;
+  overflow: auto;
+  font: 11px/1.5 'DM Mono', monospace;
+}
+
+.workspace-shell .pipeline-log-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.workspace-shell .pipeline-log-line + .pipeline-log-line {
+  margin-top: 4px;
+}
+
+.workspace-shell .pipeline-log-empty {
+  color: #8fa3c0;
+}
+
+@media(max-width: 1100px){
+  .workspace-shell .raw-table-toolbar--header{
+    flex-wrap: wrap;
+  }
+
+  .workspace-shell .raw-table-toolbar--header .smart-search-box{
+    flex-basis: 320px;
+    width: 320px;
+    max-width: none;
+  }
+
+  .workspace-shell .workspace-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+}
+
+@media(max-width: 800px) {
+  .workspace-shell .pipeline-log-panel {
+    padding: 14px 14px 15px;
+  }
+
+  .workspace-shell .pipeline-log-head {
+    flex-direction: column;
+  }
+
+  .workspace-shell .pipeline-log-status {
+    align-self: flex-start;
+  }
+
+}

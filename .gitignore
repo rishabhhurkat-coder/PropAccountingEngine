@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets and local configuration
+Credentials/.env
+Credentials/*.enc
+Credentials/*.gpg
+Credentials/*.key
+
+# Local/runtime data
+Other Logs/
+*.log
+*.csv
+*.db
+*.sqlite
+*.sqlite3
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/tsconfig.tsbuildinfo
+
+# IDE/OS files
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

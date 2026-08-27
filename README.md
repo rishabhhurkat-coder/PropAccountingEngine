@@ -1,41 +1,93 @@
 # H&L Prop Trading Engine
 
-This folder contains the Prop Trading Engine frontend and its dedicated
-FastAPI backend. The backend owns trade accounting, allocation, reporting,
-Matalia, Zerodha, live positions, database connections, and authentication.
-It does not import Email Automation source code.
+> A focused trading operations workspace for accounting, allocation, reporting, live positions, and broker connectivity.
 
-## Product routes
+<p>
+  <a href="https://hnlsoftware.in/prop-trading-engine/"><strong>Open the live product</strong></a> ·
+  <a href="https://github.com/rishabhhurkat-coder"><strong>Connect with Rishabh</strong></a> ·
+  <a href="https://hnlsoftware.in/contact"><strong>Discuss a project</strong></a>
+</p>
+
+The H&L Prop Trading Engine is a product-focused system for turning trading activity into a clear, operational view of positions, allocations, performance, and reporting. It is designed as an independent deployable product within the wider H&L Software portfolio.
+
+## Why this project matters
+
+Trading workflows become difficult to operate when execution data, account allocation, live positions, and reporting are spread across disconnected tools. This project brings those workflows together behind a structured frontend and a dedicated FastAPI backend.
+
+## Product capabilities
+
+- Trade accounting, allocation, and strategy reporting
+- Live positions, market prices, and CMP updates
+- Broker and external-service connection workflows
+- Protected user sessions and product-owned authentication
+- Dedicated API health checks and deployment configuration
+- A responsive React interface built for day-to-day operations
+
+## Architecture
 
 ```text
-https://hnlsoftware.in/prop-trading-engine/
-https://hnlsoftware.in/prop-trading-engine/api/*
+Browser
+  └── React + TypeScript frontend
+        └── FastAPI backend
+              ├── Trading and accounting workflows
+              ├── Broker and external connections
+              ├── Database and storage integrations
+              └── Authentication and health checks
 ```
 
-The root `edge-router/` forwards browser API requests to the dedicated Prop
-Render service. The standalone backend can also be run locally:
+The product is intentionally isolated from H&L Email Automation. Shared public routing is handled by the main H&L integration repository, while this repository remains a complete product-level codebase.
+
+## Technology
+
+| Area | Technology |
+| --- | --- |
+| Frontend | React, TypeScript, Vite |
+| Backend | Python, FastAPI |
+| Integrations | Broker APIs, database, object storage |
+| Deployment | Cloudflare Pages and Render-compatible services |
+
+## Repository structure
+
+```text
+backend/       FastAPI API, integrations, migrations, and tests
+frontend/      React application and product interface
+docs/          Architecture, security, setup, and deployment notes
+Dockerfile     Backend container definition
+```
+
+## Run locally
+
+### Backend
 
 ```powershell
-Set-Location backend
+cd backend
 py -m pip install -r requirements.txt
-py -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8001
+py -m uvicorn main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-## Backend ownership
+### Frontend
 
-- `backend/main.py` — FastAPI entry point, protected trading routes, login,
-  logout, and health endpoints.
-- `backend/auth.py` — Prop-owned session authentication.
-- `backend/connections.py` — public Zerodha connection and OAuth callback API.
-- `backend/09_External_Connections.py` — database, GCS, and Zerodha services.
-- `backend/10_LivePositions.py` — live prices, positions, and CMP updates.
-- `backend/requirements.txt` — Prop backend dependencies.
-- `backend/.env.example` — Prop backend environment template.
-- `Dockerfile` — dedicated container and start command.
+```powershell
+cd frontend
+npm install
+npm run dev
+```
 
-## Frontend deployment
+Use the environment examples as a starting point. Never commit real credentials, decrypted configuration, API tokens, or private runtime values.
 
-The frontend uses `/prop-trading-engine/` as its Vite base path. Production
-API calls stay on the public domain through the root Worker. The existing
-Cloudflare Pages project remains direct-upload based until a safe Git
-migration is separately validated.
+## Project status
+
+The product is actively evolving as part of the H&L Software portfolio. Deployment and operational notes are maintained in [`docs/`](docs/).
+
+## Connect and collaborate
+
+Are you building a trading workflow, internal operations platform, or data-heavy product? I’m open to thoughtful conversations about product engineering, automation, and practical systems design.
+
+- **Founder and builder:** [Rishabh Hurkat](https://github.com/rishabhhurkat-coder)
+- **H&L Software:** [hnlsoftware.in](https://hnlsoftware.in)
+- **Project inquiries:** [Use the H&L contact page](https://hnlsoftware.in/contact)
+- **Technical discussion:** [Open a GitHub issue](https://github.com/rishabhhurkat-coder/PropAccountingEngine/issues)
+
+## License
+
+Copyright © 2026 H&L Software. All rights reserved. This public repository is presented as a product and engineering portfolio; contact the author before reusing production code or assets.

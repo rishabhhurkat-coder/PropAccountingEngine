@@ -4,11 +4,11 @@ __pycache__/
 venv/
 
 # Secrets and local configuration
-Credentials/.env
-Credentials/.env.decrypted
-Credentials/*.enc
-Credentials/*.gpg
-Credentials/*.key
+backend/.env
+backend/.env.decrypted
+backend/*.enc
+backend/*.gpg
+backend/*.key
 
 # Local/runtime data
 Other Logs/
@@ -23,6 +23,8 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 frontend/tsconfig.tsbuildinfo
+edge-router/node_modules/
+edge-router/.worker-build/
 
 # IDE/OS files
 .vscode/

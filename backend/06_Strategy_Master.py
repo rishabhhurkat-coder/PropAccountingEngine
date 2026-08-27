@@ -10,6 +10,8 @@ from __future__ import annotations
 from calendar import monthrange
 from datetime import date, timedelta
 import re
+import threading
+from time import monotonic
 from typing import Any
 
 import pandas as pd
@@ -17,6 +19,15 @@ import pandas as pd
 
 _EXPIRY_RE = re.compile(r"^(\d{1,2})([A-Z]{3})(\d{2}|\d{4})$")
 STRATEGY_MASTER_TABLE = 'matalia.strategy_master'
+STRATEGY_MASTER_CACHE_TTL_SECONDS = 30.0
+_STRATEGY_MASTER_CACHE_LOCK = threading.Lock()
+_STRATEGY_MASTER_CACHE: tuple[float, list[dict[str, Any]]] | None = None
+
+
+def invalidate_strategy_master_cache() -> None:
+    global _STRATEGY_MASTER_CACHE
+    with _STRATEGY_MASTER_CACHE_LOCK:
+        _STRATEGY_MASTER_CACHE = None
 
 
 def ensure_strategy_master_table(conn: Any) -> None:
@@ -57,7 +68,14 @@ def _strategy_master_record(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def load_strategy_master_rows(conn: Any) -> list[dict[str, Any]]:
-    ensure_strategy_master_table(conn)
+    global _STRATEGY_MASTER_CACHE
+    now = monotonic()
+    with _STRATEGY_MASTER_CACHE_LOCK:
+        if _STRATEGY_MASTER_CACHE is not None:
+            expires_at, cached_rows = _STRATEGY_MASTER_CACHE
+            if expires_at > now:
+                return [row.copy() for row in cached_rows]
+
     cursor = conn.execute(
         f'''
         SELECT mapping_id, parent_qty, expiry, instrument, seq,
@@ -67,7 +85,10 @@ def load_strategy_master_rows(conn: Any) -> list[dict[str, Any]]:
         '''
     )
     columns = [column.name for column in cursor.description]
-    return [_strategy_master_record(dict(zip(columns, row))) for row in cursor.fetchall()]
+    rows = [_strategy_master_record(dict(zip(columns, row))) for row in cursor.fetchall()]
+    with _STRATEGY_MASTER_CACHE_LOCK:
+        _STRATEGY_MASTER_CACHE = (monotonic() + STRATEGY_MASTER_CACHE_TTL_SECONDS, rows)
+    return [row.copy() for row in rows]
 
 
 def _payload_value(payload: Any, name: str, default: Any = None) -> Any:
@@ -76,6 +97,7 @@ def _payload_value(payload: Any, name: str, default: Any = None) -> Any:
 
 def save_strategy_setup(conn: Any, payload: Any) -> tuple[list[dict[str, Any]], int]:
     ensure_strategy_master_table(conn)
+    invalidate_strategy_master_cache()
     strategy_name = str(_payload_value(payload, 'strategyName', '')).strip()
     instrument = str(_payload_value(payload, 'instrument', '')).strip().upper()
     expiries = [normalize_expiry(expiry) for expiry in _payload_value(payload, 'expiries', []) if str(expiry).strip()]
@@ -92,8 +114,9 @@ def save_strategy_setup(conn: Any, payload: Any) -> tuple[list[dict[str, Any]], 
             f'''SELECT 1 FROM {STRATEGY_MASTER_TABLE}
                 WHERE lower(trim(strategy_name)) = lower(trim(%s))
                   AND upper(trim(instrument)) = upper(trim(%s))
+                  AND parent_qty = %s
                   AND expiry = ANY(%s) LIMIT 1''',
-            (original_name, instrument, expiries),
+            (original_name, instrument, parent_qty, expiries),
         ).fetchone()
         if duplicate:
             raise ValueError('A strategy with this name, instrument and expiry already exists.')
@@ -134,6 +157,7 @@ def save_strategy_setup(conn: Any, payload: Any) -> tuple[list[dict[str, Any]], 
 
 def delete_strategy_master_rows(conn: Any, mapping_id: int | None = None, strategy_name: str = '') -> int:
     ensure_strategy_master_table(conn)
+    invalidate_strategy_master_cache()
     if mapping_id is not None:
         result = conn.execute(f'DELETE FROM {STRATEGY_MASTER_TABLE} WHERE mapping_id = %s', (int(mapping_id),))
         if not result.rowcount:
@@ -151,6 +175,7 @@ def delete_strategy_master_rows(conn: Any, mapping_id: int | None = None, strate
 def migrate_strategy_master_xlsx(conn: Any, workbook_path: Any) -> int:
     """Import the legacy workbook rows into Supabase once."""
     ensure_strategy_master_table(conn)
+    invalidate_strategy_master_cache()
     frame = pd.read_excel(workbook_path)
     if frame.empty:
         return 0
@@ -248,5 +273,3 @@ def next_expiries(values: list[Any]) -> list[str]:
         if candidate not in result:
             result.append(candidate)
     return result
-
-

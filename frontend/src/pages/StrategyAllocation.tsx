@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent, ReactNode } from 'react';
-import { Activity, BarChart3, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, FileChartColumn, History, Loader2, Play, Search, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Terminal, Trash2, Users, UserRound, X } from 'lucide-react';
-import { deleteTradeBookTrade, loadImportPipelineLog, loadStrategyAllocation, loadStrategyMaster, runImportPipeline, saveStrategySetup, uploadImportFile, type PipelineLogResponse } from '../lib/api';
+import { Activity, AlertCircle, AlertTriangle, ArrowUpDown, BarChart3, CalendarDays, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, FileChartColumn, Filter, History, Loader2, LogOut, Plus, RefreshCw, Search, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Terminal, Trash2, Users, X } from 'lucide-react';
+import { deleteTradeBookTrade, loadImportPipelineLog, loadStrategyAllocation, preloadStrategyAllocation, revalidateStrategyAllocationSnapshot, runImportPipeline, saveStrategySetup, uploadImportFiles, type PipelineLogResponse } from '../lib/api';
 import type { StrategyAllocationRow, StrategyMasterRow, StrategySetupPayload } from '../lib/api';
 import { navigate } from '../lib/router';
-import { WorkflowTimeline } from '../components/PipelineUI';
+import { signOut } from '../lib/auth';
+import { pipelineTimelineStage, WorkflowTimeline } from '../components/PipelineUI';
 import Calendar from '../components/Calendar';
-import type { Stage } from '../types';
 
 type Trade = {
   id: string;
@@ -24,13 +24,25 @@ type Trade = {
   strategy: string;
   allocated: boolean;
   bucket: 'Open' | 'Unassigned';
+  splitTradeId?: string;
+};
+
+type BucketFilter = 'all' | 'allocated' | 'unassigned';
+type SortKey = 'date' | 'time' | 'instrument' | 'expiry' | 'strike' | 'tradeType' | 'optionType' | 'qty' | 'avg' | 'strategy';
+type SortDirection = 'asc' | 'desc';
+type TableFilters = {
+  date: string;
+  instrument: string;
+  expiry: string;
+  tradeType: string;
+  optionType: string;
+  strategy: string;
 };
 
 const groups = [
   ['PIPELINE', [['02 Merge Trades', FileChartColumn], ['03 Split Trades', SlidersHorizontal], ['04 Strategy Allocation', Users], ['05 Trade Book', ShieldCheck]]],
   ['TRADING', [['Positions', Activity], ['Strategies', Activity], ['Orders', SlidersHorizontal], ['Watchlist', Sparkles]]],
   ['REPORTS', [['Profit and Loss Report', FileChartColumn], ['Strategy Report', BarChart3], ['Activity Log', History]]],
-  ['HIDDEN', [['01 Raw Trade Import', UserRound]]],
   ['SYSTEM', [['Settings', Settings], ['Users', Users], ['System Health', ShieldCheck]]],
 ] as const;
 
@@ -320,28 +332,24 @@ function Sidebar({ onStrategySetup }: { onStrategySetup: () => void }) {
         </div>
       ))}
       <div className="alloc-status">
-        <span className="status-dot">●</span>
-        <strong>System Status</strong>
-        <small>All systems operational</small>
-        <small>Last sync: live</small>
-        <hr />
-        <button>View Logs</button>
+        <button type="button" className="sidebar-logout" onClick={() => void signOut()}><LogOut size={13} /> Logout</button>
       </div>
     </aside>
   );
 }
 
-function Stat({ tone, icon, label, value, detail }: { tone: string; icon: ReactNode; label: string; value: string; detail?: string }) {
-  return (
-    <div className="alloc-stat">
+function Stat({ tone, icon, label, value, detail, onClick, active = false }: { tone: string; icon: ReactNode; label: string; value: string; detail?: string; onClick?: () => void; active?: boolean }) {
+  const content = (
+    <>
       <div className={`stat-icon ${tone}`}>{icon}</div>
       <div>
         <div className="stat-label">{label}</div>
         <strong className={tone === 'red' ? 'red-text' : tone === 'green' ? 'green-text' : ''}>{value}</strong>
         {detail && <small className={`${tone}-text`}>{detail}</small>}
       </div>
-    </div>
+    </>
   );
+  return onClick ? <button type="button" className={`alloc-stat alloc-stat-clickable${active ? ' active' : ''}`} onClick={onClick} aria-pressed={active}>{content}</button> : <div className="alloc-stat">{content}</div>;
 }
 
 function mapAllocationRows(rows: StrategyAllocationRow[]): Trade[] {
@@ -361,6 +369,7 @@ function mapAllocationRows(rows: StrategyAllocationRow[]): Trade[] {
     strategy: row.strategy,
     allocated: row.bucket === 'Open',
     bucket: row.bucket,
+    splitTradeId: row.splitTradeId,
   }));
 }
 
@@ -424,21 +433,59 @@ function matchesNumericSearch(value: string, query: string) {
   return false;
 }
 
-function Table({ rows, onAllocate, onDelete }: { rows: Trade[]; onAllocate: (row: Trade) => void; onDelete: (row: Trade) => void }) {
+const SORTABLE_HEADERS: Array<{ key: SortKey; label: string }> = [
+  { key: 'date', label: 'Date' },
+  { key: 'time', label: 'Time' },
+  { key: 'instrument', label: 'Instrument' },
+  { key: 'expiry', label: 'Expiry' },
+  { key: 'strike', label: 'Strike' },
+  { key: 'tradeType', label: 'Trade' },
+  { key: 'optionType', label: 'Option' },
+  { key: 'qty', label: 'Qty' },
+  { key: 'avg', label: 'Avg Price' },
+  { key: 'strategy', label: 'Strategy' },
+];
+
+const STRATEGY_FAMILY_BADGES = [
+  { match: 'BANKNIFTY FING', tone: 'purple', icon: FileChartColumn },
+  { match: 'BANKNIFTY AVWAP', tone: 'green', icon: Activity },
+  { match: 'NIFTY AVWAP', tone: 'blue', icon: BarChart3 },
+  { match: 'NIFTY FING', tone: 'orange', icon: Sparkles },
+  { match: 'ATM EMA INTRADAY', tone: 'cyan', icon: Activity },
+  { match: 'NIFTY OPT BUY', tone: 'pink', icon: SlidersHorizontal },
+  { match: 'NIFTY EXPIRY TRADES', tone: 'yellow', icon: History },
+];
+
+function strategyBadgePattern(strategy: string) {
+  const normalized = strategy.replace(/\s+/g, ' ').trim().toUpperCase();
+  const family = STRATEGY_FAMILY_BADGES.find(({ match }) => normalized.includes(match));
+  return family || { tone: 'neutral', icon: BarChart3 };
+}
+
+function Table({ rows, onAllocate, onDelete, selectionMode, selectedIds, onToggle, onToggleAll, sortKey, sortDirection, onSort }: { rows: Trade[]; onAllocate: (row: Trade) => void; onDelete: (row: Trade) => void; selectionMode: boolean; selectedIds: Set<string>; onToggle: (row: Trade) => void; onToggleAll: (checked: boolean) => void; sortKey: SortKey; sortDirection: SortDirection; onSort: (key: SortKey) => void }) {
+  const removableRows = rows.filter((row) => row.source === 'strategy_open');
+  const selectedRemovableCount = removableRows.filter((row) => selectedIds.has(row.id)).length;
   return (
     <div className="alloc-table-wrap">
-      <table className="alloc-table">
+      <table className={`alloc-table${selectionMode ? ' selection-mode' : ''}`}>
         <thead>
           <tr>
-            {['Date', 'Time', 'Instrument', 'Expiry', 'Strike', 'Trade', 'Option', 'Qty', 'Avg Price', 'Strategy', 'Allocation', 'Actions'].map((header) => (
-              <th key={header}>{header}</th>
+            {selectionMode && <th className="alloc-select-column"><input type="checkbox" checked={removableRows.length > 0 && selectedRemovableCount === removableRows.length} onChange={(event) => onToggleAll(event.target.checked)} aria-label="Select all trades for removal" /></th>}
+            {SORTABLE_HEADERS.map(({ key, label }) => (
+              <th key={key} aria-sort={sortKey === key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+                <button type="button" className="table-sort-button" onClick={() => onSort(key)} title={`Sort ${label}`}>
+                  {label}<ArrowUpDown size={12} className={sortKey === key ? 'active' : ''} />
+                </button>
+              </th>
             ))}
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td>{formatDisplayDate(row.date)}</td>
+              {selectionMode && <td className="alloc-select-column"><input type="checkbox" checked={selectedIds.has(row.id)} onChange={() => onToggle(row)} disabled={row.source !== 'strategy_open'} aria-label={`Select trade ${row.order} for removal`} /></td>}
+              <td className="alloc-date-cell">{formatDisplayDate(row.date)}</td>
               <td>{formatDisplayTime(row.time)}</td>
               <td className="instrument">{row.instrument}</td>
               <td>{row.expiry}</td>
@@ -451,14 +498,21 @@ function Table({ rows, onAllocate, onDelete }: { rows: Trade[]; onAllocate: (row
               </td>
               <td>{row.qty}</td>
               <td>{row.avg}</td>
-              <td>{row.strategy || '—'}</td>
-              <td>
-                <button className="allocate-btn" onClick={() => onAllocate(row)}>
-                  Allocate
-                </button>
+              <td className="strategy-cell">
+                {(() => {
+                  const strategy = row.strategy || '—';
+                  const pattern = strategyBadgePattern(strategy);
+                  const Icon = pattern.icon;
+                  return (
+                    <button className={`strategy-cell-button strategy-color-badge ${pattern.tone}`} type="button" onClick={() => onAllocate(row)} aria-label={`Allocate ${strategy} for trade ${row.order}`} title="Allocate trade">
+                      <Icon size={14} aria-hidden="true" />
+                      <span>{strategy}</span>
+                    </button>
+                  );
+                })()}
               </td>
               <td>
-                <button className="alloc-delete-button" type="button" onClick={() => onDelete(row)} disabled={row.source !== 'strategy_open'} aria-label={`Delete trade ${row.order}`} title={row.source === 'strategy_open' ? 'Delete trade' : 'This trade has not been allocated yet'}>
+                <button className="alloc-delete-button" type="button" onClick={() => onDelete(row)} disabled={row.source !== 'strategy_open'} aria-label={`Remove trade ${row.order}`} title={row.source === 'strategy_open' ? 'Remove trade' : 'This trade has not been allocated yet'}>
                   <Trash2 size={16} />
                 </button>
               </td>
@@ -470,25 +524,179 @@ function Table({ rows, onAllocate, onDelete }: { rows: Trade[]; onAllocate: (row
   );
 }
 
-function Section({ title, rows, onAllocate, onDelete }: { title: string; rows: Trade[]; onAllocate: (row: Trade) => void; onDelete: (row: Trade) => void }) {
-  const [query, setQuery] = useState('');
+function formatVerificationTime(value: string) {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).replace(':', '.').toUpperCase();
+}
+
+export function ThemeSelect({ label, value, options, onChange, groupKey, activeKey, onToggle }: { label: string; value: string; options: string[]; onChange: (value: string) => void; groupKey?: string; activeKey?: string | null; onToggle?: (key: string | null) => void }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const controlled = groupKey !== undefined && activeKey !== undefined && onToggle !== undefined;
+  const isOpen = controlled ? activeKey === groupKey : open;
+
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        if (controlled) onToggle?.(null);
+        else setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [controlled, onToggle]);
+
+  useEffect(() => {
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (controlled) onToggle?.(null);
+        else setOpen(false);
+      }
+    };
+    document.addEventListener('keydown', escape);
+    return () => document.removeEventListener('keydown', escape);
+  }, [controlled, onToggle]);
+
+  const displayValue = value || 'All';
+  return <div className="theme-select" ref={rootRef}>
+    <button type="button" className={`theme-select-trigger${isOpen ? ' open' : ''}`} onClick={() => { if (controlled) onToggle?.(isOpen ? null : groupKey!); else setOpen((current) => !current); }} aria-label={label} aria-haspopup="listbox" aria-expanded={isOpen}>
+      <span>{displayValue}</span>
+      <ChevronDown size={14} />
+    </button>
+    {isOpen && <div className="theme-select-menu" role="listbox" aria-label={`${label} options`}>
+      {options.map((option) => <button type="button" role="option" aria-selected={option === value} className={`theme-select-option${option === value ? ' selected' : ''}`} key={option || 'all'} onClick={() => { onChange(option); if (controlled) onToggle?.(null); else setOpen(false); }}>
+        <span>{option || 'All'}</span>
+        {option === value && <CheckCircle2 size={13} />}
+      </button>)}
+    </div>}
+  </div>;
+}
+
+const EMPTY_TABLE_FILTERS: TableFilters = { date: '', instrument: '', expiry: '', tradeType: '', optionType: '', strategy: '' };
+
+const DATE_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function normalizeTypedDate(value: string) {
+  const input = value.trim().replace(/[/.]/g, '-').replace(/\s+/g, '-');
+  if (!input) return '';
+  let day = 0;
+  let month = 0;
+  let year = 0;
+  let match = input.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (match) {
+    day = Number(match[1]);
+    month = Number(match[2]);
+    year = Number(match[3]);
+  } else {
+    match = input.match(/^(\d{1,2})-([A-Za-z]{3,})-(\d{2}|\d{4})$/);
+    if (!match) return '';
+    day = Number(match[1]);
+    month = DATE_MONTHS.findIndex((name) => name.toLowerCase() === match![2].slice(0, 3).toLowerCase()) + 1;
+    year = Number(match[3]);
+    if (year < 100) year += 2000;
+  }
+  if (!month || !day || !year) return '';
+  const parsed = new Date(year, month - 1, day);
+  if (parsed.getFullYear() !== year || parsed.getMonth() !== month - 1 || parsed.getDate() !== day) return '';
+  return formatDisplayDate(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+}
+
+function dateFilterVariants(value: string) {
+  const display = formatDisplayDate(value);
+  const [day, month] = display.split('-');
+  const monthNumber = DATE_MONTHS.indexOf(month) + 1;
+  const monthToken = monthNumber > 0 ? String(monthNumber).padStart(2, '0') : month;
+  // Keep partial matching focused on the day/month. Including the ISO year
+  // here would make typing "20" match every 2026 date.
+  return [display, `${day}-${month}`, `${day}-${monthToken}`, `${day}/${monthToken}`];
+}
+
+function matchesTableFilter(row: Trade, filters: TableFilters, omit?: keyof TableFilters) {
+  const normalizedDate = normalizeTypedDate(filters.date) || filters.date;
+  const matchesDate = !filters.date || omit === 'date' || dateFilterVariants(row.date).some((value) => normalizeSearchValue(value).includes(normalizeSearchValue(normalizedDate)));
+  const matchesInstrument = !filters.instrument || omit === 'instrument' || row.instrument === filters.instrument;
+  const matchesExpiry = !filters.expiry || omit === 'expiry' || normalizeSearchValue(row.expiry).includes(normalizeSearchValue(filters.expiry));
+  const matchesTrade = !filters.tradeType || omit === 'tradeType' || row.tradeType === filters.tradeType;
+  const matchesOption = !filters.optionType || omit === 'optionType' || row.optionType === filters.optionType;
+  const matchesStrategy = !filters.strategy || omit === 'strategy' || normalizeSearchValue(row.strategy).includes(normalizeSearchValue(filters.strategy));
+  return matchesDate && matchesInstrument && matchesExpiry && matchesTrade && matchesOption && matchesStrategy;
+}
+
+function Section({ title, rows, onAllocate, onDelete, onDeleteMany }: { title: string; rows: Trade[]; onAllocate: (row: Trade) => void; onDelete: (row: Trade) => void; onDeleteMany: (rows: Trade[]) => void }) {
+  const [query, setQuery] = useState(() => window.sessionStorage.getItem('strategy-allocation-search') ?? '');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showDateSuggestions, setShowDateSuggestions] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [filters, setFilters] = useState<TableFilters>(() => {
+    try {
+      const saved = window.sessionStorage.getItem('strategy-allocation-filters');
+      return saved ? { ...EMPTY_TABLE_FILTERS, ...JSON.parse(saved) as Partial<TableFilters> } : EMPTY_TABLE_FILTERS;
+    } catch {
+      return EMPTY_TABLE_FILTERS;
+    }
+  });
+
+  const filterOptions = useMemo(() => ({
+    dates: Array.from(new Set(rows.filter((row) => matchesTableFilter(row, filters, 'date')).map((row) => formatDisplayDate(row.date)).filter(Boolean))).sort(),
+    instruments: Array.from(new Set(rows.filter((row) => matchesTableFilter(row, filters, 'instrument')).map((row) => row.instrument).filter(Boolean))).sort(),
+    expiries: Array.from(new Set(rows.filter((row) => matchesTableFilter(row, filters, 'expiry')).map((row) => row.expiry).filter(Boolean))).sort(),
+    tradeTypes: Array.from(new Set(rows.filter((row) => matchesTableFilter(row, filters, 'tradeType')).map((row) => row.tradeType).filter(Boolean))).sort(),
+    optionTypes: Array.from(new Set(rows.filter((row) => matchesTableFilter(row, filters, 'optionType')).map((row) => row.optionType).filter(Boolean))).sort(),
+    strategies: Array.from(new Set(rows.filter((row) => matchesTableFilter(row, filters, 'strategy')).map((row) => row.strategy).filter(Boolean))).sort(),
+  }), [filters, rows]);
+
+  function updateFilter(key: keyof TableFilters, value: string) {
+    setFilters((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateDateFilter(value: string) {
+    updateFilter('date', normalizeTypedDate(value) || value);
+    setShowDateSuggestions(true);
+  }
+
+  const dateSuggestions = useMemo(() => {
+    const query = normalizeSearchValue(filters.date);
+    return filterOptions.dates.filter((value) => !query || dateFilterVariants(value).some((variant) => normalizeSearchValue(variant).includes(query))).slice(0, 8);
+  }, [filterOptions.dates, filters.date]);
+
+  function sortValue(row: Trade, key: SortKey) {
+    if (key === 'date') return Date.parse(row.date) || row.date.localeCompare('');
+    if (key === 'time') return formatDisplayTime(row.time);
+    if (key === 'strike' || key === 'qty' || key === 'avg') return Number(String(row[key]).replace(/,/g, '')) || 0;
+    return String(row[key] ?? '').toLowerCase();
+  }
 
   const filtered = useMemo(() => {
     const normalizedQuery = normalizeSearchValue(query);
-    if (!normalizedQuery) return rows;
+    let filteredRows = rows;
+
+    filteredRows = filteredRows.filter((row) => matchesTableFilter(row, filters));
+
+    if (!normalizedQuery) {
+      return [...filteredRows].sort((a, b) => {
+        const left = sortValue(a, sortKey);
+        const right = sortValue(b, sortKey);
+        const comparison = left < right ? -1 : left > right ? 1 : 0;
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
 
     const numericQuery = normalizeNumericSearchValue(normalizedQuery);
     const isNumericQuery = /^\d+(?:\.\d+)?$/.test(normalizedQuery.replace(/,/g, ''));
 
     if (isNumericQuery) {
-      return rows.filter((row) =>
+      filteredRows = filteredRows.filter((row) =>
         [row.strike, row.qty, row.avg].some((field) => matchesNumericSearch(String(field), numericQuery)),
       );
-    }
-
-    return rows.filter((row) => {
+    } else {
+      filteredRows = filteredRows.filter((row) => {
       const exactFields = [
         formatDisplayDate(row.date),
         row.instrument,
@@ -516,13 +724,21 @@ function Section({ title, rows, onAllocate, onDelete }: { title: string; rows: T
         row.source,
       ].join(' '));
       return normalizedQuery.split(' ').every((token) => searchableText.includes(token));
+      });
+    }
+    return [...filteredRows].sort((a, b) => {
+      const left = sortValue(a, sortKey);
+      const right = sortValue(b, sortKey);
+      const comparison = left < right ? -1 : left > right ? 1 : 0;
+      return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [query, rows]);
+  }, [filters, query, rows, sortDirection, sortKey]);
 
   const totalCount = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const safePage = Math.min(page, totalPages);
   const pageRows = filtered.slice((safePage - 1) * pageSize, (safePage - 1) * pageSize + pageSize);
+  const selectedRows = rows.filter((row) => selectedIds.has(row.id) && row.source === 'strategy_open');
 
   useEffect(() => {
     setPage(1);
@@ -533,8 +749,52 @@ function Section({ title, rows, onAllocate, onDelete }: { title: string; rows: T
   }, [totalPages]);
 
   useEffect(() => {
+    const validIds = new Set(rows.filter((row) => row.source === 'strategy_open').map((row) => row.id));
+    setSelectedIds((current) => new Set(Array.from(current).filter((id) => validIds.has(id))));
+  }, [rows]);
+
+  useEffect(() => {
     setPage(1);
-  }, [pageSize, query]);
+  }, [filters, pageSize, query, sortDirection, sortKey]);
+
+  useEffect(() => {
+    window.sessionStorage.setItem('strategy-allocation-search', query);
+  }, [query]);
+
+  useEffect(() => {
+    window.sessionStorage.setItem('strategy-allocation-filters', JSON.stringify(filters));
+  }, [filters]);
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
+  function onSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDirection((current) => current === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  }
+
+  function toggleSelected(row: Trade) {
+    if (row.source !== 'strategy_open') return;
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(row.id)) next.delete(row.id); else next.add(row.id);
+      return next;
+    });
+  }
+
+  function toggleAll(checked: boolean) {
+    setSelectedIds(checked ? new Set(pageRows.filter((row) => row.source === 'strategy_open').map((row) => row.id)) : new Set());
+  }
+
+  function toggleSelectionMode() {
+    setSelectionMode((current) => {
+      if (current) setSelectedIds(new Set());
+      return !current;
+    });
+  }
 
   return (
     <section className="alloc-card">
@@ -547,10 +807,27 @@ function Section({ title, rows, onAllocate, onDelete }: { title: string; rows: T
           <label className="table-search">
             <Search size={15} />
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search trades..." />
+            {query && <button type="button" className="table-search-clear-button" onMouseDown={(event) => event.preventDefault()} onClick={() => setQuery('')} aria-label="Clear search" title="Clear search"><X size={14} /></button>}
           </label>
+          {selectedRows.length > 0 && <button type="button" className="table-bulk-remove" onClick={() => { onDeleteMany(selectedRows); setSelectedIds(new Set()); }}><Trash2 size={14} /> Remove selected ({selectedRows.length})</button>}
+          <button type="button" className={`table-select-button${selectionMode ? ' active' : ''}`} onClick={toggleSelectionMode} aria-pressed={selectionMode} aria-label={selectionMode ? 'Exit trade removal selection mode' : 'Select trades for removal'} title={selectionMode ? 'Exit selection mode' : 'Select trades for removal'}>
+            <CheckSquare size={16} />
+          </button>
+          <button type="button" className={`table-filter-button${showFilters || activeFilterCount ? ' active' : ''}`} onClick={() => setShowFilters((current) => !current)}>
+            <Filter size={14} /> Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
+          </button>
         </div>
       </div>
-      <Table rows={pageRows} onAllocate={onAllocate} onDelete={onDelete} />
+      {showFilters && <div className="table-filter-panel">
+        <label className="table-filter-date">Date<div className="table-filter-date-controls"><Calendar value={filters.date ? parseCalendarDisplayDate(filters.date) : ''} onChange={(value) => { updateFilter('date', value ? formatDisplayDate(value) : ''); setShowDateSuggestions(false); }} placeholder="Any date" allowClear allowedDates={filterOptions.dates.map(parseCalendarDisplayDate)} /><input value={filters.date} onChange={(event) => updateDateFilter(event.target.value)} onFocus={() => setShowDateSuggestions(true)} onBlur={() => window.setTimeout(() => setShowDateSuggestions(false), 120)} placeholder="Type date" aria-label="Type date" aria-autocomplete="list" aria-expanded={showDateSuggestions && dateSuggestions.length > 0} />{showDateSuggestions && dateSuggestions.length > 0 && <div className="table-filter-date-suggestions" role="listbox">{dateSuggestions.map((value) => <button type="button" role="option" key={value} onMouseDown={(event) => { event.preventDefault(); updateFilter('date', value); setShowDateSuggestions(false); }}>{value}</button>)}</div>}</div></label>
+        <div className="table-filter-field"><span>Instrument</span><ThemeSelect label="Instrument" value={filters.instrument} options={['', ...filterOptions.instruments]} onChange={(value) => updateFilter('instrument', value)} /></div>
+        <div className="table-filter-field"><span>Expiry</span><ThemeSelect label="Expiry" value={filters.expiry} options={['', ...filterOptions.expiries]} onChange={(value) => updateFilter('expiry', value)} /></div>
+        <div className="table-filter-field"><span>Trade</span><ThemeSelect label="Trade" value={filters.tradeType} options={['', ...filterOptions.tradeTypes]} onChange={(value) => updateFilter('tradeType', value)} /></div>
+        <div className="table-filter-field"><span>Option</span><ThemeSelect label="Option" value={filters.optionType} options={['', ...filterOptions.optionTypes]} onChange={(value) => updateFilter('optionType', value)} /></div>
+        <div className="table-filter-field"><span>Strategy</span><ThemeSelect label="Strategy" value={filters.strategy} options={['', ...filterOptions.strategies]} onChange={(value) => updateFilter('strategy', value)} /></div>
+        <button type="button" className="table-filter-clear" onClick={() => setFilters(EMPTY_TABLE_FILTERS)} aria-label="Clear filters" title="Clear filters"><X size={14} /></button>
+      </div>}
+      <Table rows={pageRows} onAllocate={onAllocate} onDelete={onDelete} selectionMode={selectionMode} selectedIds={selectedIds} onToggle={toggleSelected} onToggleAll={toggleAll} sortKey={sortKey} sortDirection={sortDirection} onSort={onSort} />
       <div className="table-footer">
         <span>
           Showing {(safePage - 1) * pageSize + (pageRows.length ? 1 : 0)} to {(safePage - 1) * pageSize + pageRows.length} of {totalCount} trades
@@ -581,18 +858,28 @@ function Section({ title, rows, onAllocate, onDelete }: { title: string; rows: T
 
 export function StrategyAllocation() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [date, setDate] = useState('All Dates');
-  const [instrument, setInstrument] = useState('All Instruments');
+  const [date, setDate] = useState(() => {
+    const queryDate = new URLSearchParams(window.location.search).get('date');
+    return queryDate ? formatDisplayDate(queryDate) : 'All Dates';
+  });
   const [notice, setNotice] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [removeConfirmRows, setRemoveConfirmRows] = useState<Trade[]>([]);
+  const [deletingTrade, setDeletingTrade] = useState(false);
+  // Render the page shell immediately; allocation data arrives in the background.
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [rows, setRows] = useState<Trade[]>([]);
   const [strategyMasterRows, setStrategyMasterRows] = useState<StrategyMasterRow[]>([]);
   const [strategySetupOpen, setStrategySetupOpen] = useState(false);
   const [pipelineLog, setPipelineLog] = useState<PipelineLogResponse | null>(null);
   const [showProcessLog, setShowProcessLog] = useState(false);
+  const [showTradeDataPlan, setShowTradeDataPlan] = useState(false);
   const [showPipelineCard, setShowPipelineCard] = useState(false);
   const [pipelineLoading, setPipelineLoading] = useState(false);
+  const [pipelineError, setPipelineError] = useState('');
+  const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');
+  const [syncStatus, setSyncStatus] = useState<'checking' | 'verified' | 'mismatch' | 'idle'>('checking');
+  const [syncCheckedAt, setSyncCheckedAt] = useState('');
   const [counts, setCounts] = useState({
     'Open Trades': 0,
     'Unassigned Trades': 0,
@@ -600,20 +887,38 @@ export function StrategyAllocation() {
     Strategies: 0,
   });
 
+  function countsAreVerified(data: Awaited<ReturnType<typeof loadStrategyAllocation>>) {
+    return data.verification?.counts_match
+      ?? ((data.rows?.length ?? 0) === ((data.counts?.['Open Trades'] ?? 0) + (data.counts?.['Unassigned Trades'] ?? 0)));
+  }
+
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([loadStrategyAllocation(), loadStrategyMaster()])
-      .then(([data, master]) => {
+    let allocationArrived = false;
+
+    // Start with the cached/normal request. The callback renders allocation
+    // rows as soon as the primary request completes; master/version metadata
+    // remains in the same preload but is not allowed to delay the table.
+    preloadStrategyAllocation(false, (allocation) => {
+        allocationArrived = true;
         if (cancelled) return;
-        const mapped = mapAllocationRows(data.rows ?? []);
-        setRows(mapped);
+        setRows(mapAllocationRows(allocation.rows ?? []));
+        setCounts(allocation.counts);
+        setSyncStatus(countsAreVerified(allocation) ? 'verified' : 'mismatch');
+        setSyncCheckedAt(allocation.verification?.checked_at ?? '');
+        setLoading(false);
+      })
+      .then(({ allocation, master }) => {
+        if (cancelled) return;
         setStrategyMasterRows(master.rows ?? []);
-        setCounts(data.counts);
         setLoading(false);
       })
       .catch((loadError: unknown) => {
         if (cancelled) return;
+        // A secondary preload failure must not erase rows that are already
+        // visible. Only show an error when the primary request failed too.
+        if (allocationArrived) return;
         setError(loadError instanceof Error ? loadError.message : 'Unable to load allocation data');
         setRows([]);
         setLoading(false);
@@ -626,12 +931,60 @@ export function StrategyAllocation() {
 
   useEffect(() => {
     let active = true;
+    let refreshing = false;
+    const timer = window.setInterval(() => {
+      if (!active || refreshing) return;
+      refreshing = true;
+      setSyncStatus('checking');
+      revalidateStrategyAllocationSnapshot().then(({ allocation, master }) => {
+        if (!active) return;
+        setRows(mapAllocationRows(allocation.rows ?? []));
+        setCounts(allocation.counts);
+        setStrategyMasterRows(master.rows ?? []);
+        setSyncStatus(countsAreVerified(allocation) ? 'verified' : 'mismatch');
+        setSyncCheckedAt(allocation.verification?.checked_at ?? '');
+      }).catch(() => undefined).finally(() => { refreshing = false; });
+    }, 15000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  function applyAllocationData(data: Awaited<ReturnType<typeof loadStrategyAllocation>>, master: StrategyMasterRow[]) {
+    setRows(mapAllocationRows(data.rows ?? []));
+    setCounts(data.counts);
+    setStrategyMasterRows(master);
+    setSyncStatus(countsAreVerified(data) ? 'verified' : 'mismatch');
+    setSyncCheckedAt(data.verification?.checked_at ?? '');
+  }
+
+  async function refreshAllocationWithVerification() {
+    let latest: Awaited<ReturnType<typeof loadStrategyAllocation>> | null = null;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const snapshot = await preloadStrategyAllocation(true);
+      const allocationData = snapshot.allocation;
+      latest = allocationData;
+      applyAllocationData(allocationData, snapshot.master.rows ?? []);
+      if (allocationData.verification?.counts_match) return allocationData;
+      if (attempt < 4) await new Promise((resolve) => window.setTimeout(resolve, 1000));
+    }
+    return latest;
+  }
+
+  useEffect(() => {
+    let active = true;
+    let refreshingLog = false;
     const refreshLog = async () => {
+      if (refreshingLog) return;
+      refreshingLog = true;
       try {
         const data = await loadImportPipelineLog();
         if (active) setPipelineLog(data);
       } catch {
         if (active) setPipelineLog(null);
+      } finally {
+        refreshingLog = false;
       }
     };
     refreshLog().catch(() => undefined);
@@ -645,28 +998,62 @@ export function StrategyAllocation() {
   async function startImportPipeline() {
     setShowPipelineCard(true);
     setPipelineLoading(true);
+    setPipelineError('');
+    setPipelineLog(null);
     try {
-      await runImportPipeline();
+      const result = await runImportPipeline();
+      if (result.success) {
+        const allocationData = await refreshAllocationWithVerification();
+        if (allocationData?.verification?.counts_match) {
+          setPipelineError('');
+          action(`Success — ${result.message ?? 'Pipeline completed successfully'}. Supabase data is updated and counts are verified.`);
+        } else {
+          setPipelineError('Pipeline completed, but the Supabase counts are still syncing. The page will keep checking in the background.');
+          action('Pipeline completed. Supabase count verification is still pending.');
+        }
+      } else {
+        const failureMessage = result.error || result.message || `Pipeline failed${result.failed_step ? ` at ${result.failed_step}` : ''}`;
+        setPipelineError(failureMessage);
+        action(failureMessage);
+      }
     } catch (runError: unknown) {
-      action(runError instanceof Error ? runError.message : 'Pipeline failed');
+      const message = runError instanceof Error ? runError.message : 'Pipeline failed';
+      setPipelineError(message);
+      action(message);
     } finally {
       setPipelineLoading(false);
     }
   }
 
-  function selectFileAndRun() {
-    if (!pipelineLoading) inputRef.current?.click();
+  function openTradeFilePicker() {
+    if (pipelineBusy) return;
+    const input = inputRef.current;
+    if (!input) return;
+    try {
+      const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
+      if (pickerInput.showPicker) pickerInput.showPicker();
+      else input.click();
+    } catch {
+      input.click();
+    }
   }
 
   async function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
-    const selected = event.target.files?.[0];
+    const selected = Array.from(event.target.files ?? []);
     event.target.value = '';
-    if (!selected) return;
+    if (!selected.length) return;
+    setShowPipelineCard(true);
+    setPipelineLoading(true);
+    setPipelineError('Uploading selected file(s)…');
+    setPipelineLog(null);
     try {
-      await uploadImportFile(selected);
+      await uploadImportFiles(selected);
       await startImportPipeline();
     } catch (fileError: unknown) {
-      action(fileError instanceof Error ? fileError.message : 'Unable to select TXT file');
+      const message = fileError instanceof Error ? fileError.message : 'Unable to select TXT file';
+      setPipelineLoading(false);
+      setPipelineError(message);
+      action(message);
     }
   }
 
@@ -676,14 +1063,16 @@ export function StrategyAllocation() {
     [rows],
   );
 
-  const visibleTrades = useMemo(() => rows.filter((row) => {
-    const instrumentMatches = instrument === 'All Instruments' || row.instrument === instrument;
-    const dateMatches = date === 'All Dates' || formatDisplayDate(row.date) === date;
-    return instrumentMatches && dateMatches;
-  }), [date, instrument, rows]);
+  const visibleTrades = useMemo(() => rows.filter((row) => date === 'All Dates' || formatDisplayDate(row.date) === date), [date, rows]);
 
   const combinedVisible = useMemo(() => visibleTrades.filter((row) => row.bucket === 'Open' || row.bucket === 'Unassigned'), [visibleTrades]);
-  const instruments = useMemo(() => ['All Instruments', ...Array.from(new Set(rows.map((row) => row.instrument))).sort()], [rows]);
+  const bucketVisible = useMemo(() => combinedVisible.filter((row) => bucketFilter === 'all' || (bucketFilter === 'allocated' ? row.bucket === 'Open' : row.bucket === 'Unassigned')), [bucketFilter, combinedVisible]);
+  const syncTimeLabel = formatVerificationTime(syncCheckedAt);
+  const pipelineBusy = pipelineLoading || Boolean(pipelineLog?.running);
+  const failedPipelineFiles = pipelineLog?.failed_files?.length
+    ? pipelineLog.failed_files
+    : (pipelineLog?.files ?? []).filter((file) => file.status === 'failed');
+  const pipelineFailureReason = pipelineError || pipelineLog?.error || pipelineLog?.message || 'The import could not be completed.';
 
   function action(message: string) {
     setNotice(message);
@@ -691,22 +1080,38 @@ export function StrategyAllocation() {
   }
 
   async function deleteAllocatedTrade(row: Trade) {
-    if (!window.confirm(`Delete trade ${row.order} and all related allocation, split, and merge records?`)) return;
+    setRemoveConfirmRows([row]);
+  }
 
+  async function confirmRemoveAllocatedTrades() {
+    if (!removeConfirmRows.length) return;
+    setDeletingTrade(true);
     try {
-      const result = await deleteTradeBookTrade(row.order);
-      const [allocationData, masterData] = await Promise.all([loadStrategyAllocation(), loadStrategyMaster()]);
+      const failures: string[] = [];
+      let removedCount = 0;
+      for (const row of removeConfirmRows) {
+        try {
+          await deleteTradeBookTrade(row.order);
+          removedCount += 1;
+        } catch (removeError: unknown) {
+          failures.push(`${row.order}: ${removeError instanceof Error ? removeError.message : 'Unknown error'}`);
+        }
+      }
+      const { allocation: allocationData, master: masterData } = await preloadStrategyAllocation(true);
       setRows(mapAllocationRows(allocationData.rows ?? []));
       setCounts(allocationData.counts);
       setStrategyMasterRows(masterData.rows ?? []);
-      action(result.message);
+      action(failures.length ? `${removedCount} removed. Failed: ${failures.join(' · ')}` : `${removedCount} trade${removedCount === 1 ? '' : 's'} removed.`);
     } catch (deleteError: unknown) {
-      action(deleteError instanceof Error ? deleteError.message : 'Unable to delete trade');
+      action(deleteError instanceof Error ? deleteError.message : 'Unable to remove trade');
+    } finally {
+      setDeletingTrade(false);
+      setRemoveConfirmRows([]);
     }
   }
 
   return (
-    <div className="alloc-shell">
+    <div className={`alloc-shell ${deletingTrade ? 'delete-in-progress' : ''}`}>
       <Sidebar onStrategySetup={() => setStrategySetupOpen(true)} />
       <main className="alloc-main">
         <header className="alloc-header">
@@ -715,20 +1120,29 @@ export function StrategyAllocation() {
             <h1>04 Strategy Allocation</h1>
             <p>Allocate strategy to open trades and track performance</p>
           </div>
-          <input ref={inputRef} type="file" accept=".txt,text/plain" hidden onChange={handleImportFile} />
+          <input ref={inputRef} className="trade-file-input" type="file" accept=".txt,text/plain" multiple onChange={handleImportFile} />
           <div className="alloc-header-actions">
-            <button className="btn primary strategy-run-button" type="button" onClick={selectFileAndRun} disabled={pipelineLoading} aria-label="Select TXT file and run import pipeline" title="Select TXT file and run import pipeline">
-              {pipelineLoading ? <Loader2 className="spin" size={18} /> : <Play size={18} />}
+            <div className={`supabase-sync-status ${syncStatus}`} role="status" title={`Supabase count verification: ${syncStatus}`}>
+              {syncStatus === 'checking' ? <RefreshCw className="spin" size={13} /> : syncStatus === 'verified' ? <CheckCircle2 size={13} /> : syncStatus === 'mismatch' ? <AlertCircle size={13} /> : <RefreshCw size={13} />}
+              <span>{syncStatus === 'checking' ? 'Checking Supabase…' : syncStatus === 'verified' ? `Verified · ${syncTimeLabel}` : syncStatus === 'mismatch' ? 'Count mismatch — retrying' : 'Not verified'}</span>
+            </div>
+            <button className="allocation-page-refresh" type="button" onClick={() => window.location.reload()} aria-label="Refresh Strategy Allocation page" title="Refresh page">
+              <RefreshCw size={15} />
+            </button>
+            <button className="btn primary strategy-trades-button" type="button" onClick={openTradeFilePicker} disabled={pipelineBusy} aria-label="Add new OrderBook Data" title={pipelineBusy ? 'An import is already running' : 'Choose TXT trade files to import'}>
+              {pipelineLoading ? <Loader2 className="spin" size={17} /> : <Plus size={17} />}
+              <span>Trades</span>
+            </button>
+            <button
+              className="trade-data-danger-button"
+              type="button"
+              onClick={() => setShowTradeDataPlan(true)}
+              aria-label="Delete Trade Data plan"
+              title="Delete Trade Data — planned"
+            >
+              <AlertTriangle size={17} />
             </button>
             <Calendar className="strategy-allocation-calendar" label="Trade Date" value={date === 'All Dates' ? '' : parseCalendarDisplayDate(date)} placeholder="All Dates" allowClear allowedDates={dateOptions.slice(1).map(parseCalendarDisplayDate)} onChange={(value) => setDate(value ? formatDisplayDate(value) : 'All Dates')} />
-            <label className="alloc-select">
-              <select value={instrument} onChange={(event) => setInstrument(event.target.value)}>
-                {instruments.map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-              <ChevronDown size={15} />
-            </label>
             <button className="smart-btn" onClick={() => action('Smart allocation suggestions are ready')}>
               <Sparkles size={16} />
               Smart Allocation
@@ -737,11 +1151,13 @@ export function StrategyAllocation() {
         </header>
 
         {showPipelineCard && (
-          <div className="pipeline-card-modal-backdrop" role="presentation" onClick={() => setShowPipelineCard(false)}>
+          <div className="pipeline-card-modal-backdrop" role="presentation" onClick={() => { if (!pipelineBusy) setShowPipelineCard(false); }}>
             <section className="pipeline-card-modal" role="dialog" aria-modal="true" aria-labelledby="strategy-pipeline-card-title" onClick={(event) => event.stopPropagation()}>
               <h2 id="strategy-pipeline-card-title">Pipeline Progress</h2>
               <WorkflowTimeline
-                stage={(pipelineLog?.running ? 'convert' : 'ready') as Stage}
+                stage={pipelineTimelineStage(pipelineLog?.stage, pipelineLog?.running || pipelineLoading)}
+                status={pipelineError || pipelineLog?.stage === 'error' ? 'error' : pipelineLog?.running || pipelineLoading ? 'running' : pipelineLog?.stage === 'ready' ? 'success' : pipelineLog?.stage === 'files' ? 'files' : 'idle'}
+                message={pipelineError || pipelineLog?.message}
                 actions={
                   <button
                     className={`pipeline-monitor strategy-pipeline-monitor strategy-python-view ${pipelineLog?.running ? 'running' : 'idle'}`}
@@ -753,9 +1169,48 @@ export function StrategyAllocation() {
                     <span className="pipeline-monitor-icon"><span className="python-view-glyph">λ</span></span>
                   </button>
                 }
-                onSelectFile={selectFileAndRun}
+                onSelectFile={openTradeFilePicker}
               />
-              <button className="pipeline-card-ok" type="button" onClick={() => setShowPipelineCard(false)}>OK</button>
+              {(pipelineLog?.stage === 'error' || pipelineError) && <div className="pipeline-failure-summary" role="alert">
+                <strong>Why the import failed</strong>
+                <p>{pipelineFailureReason}</p>
+                {failedPipelineFiles.length > 0 ? <ul>{failedPipelineFiles.map((file) => <li key={`${file.name}-${file.date}`}><b>{file.name}</b><span>Date: {file.date || 'not found'}</span><span>{file.reason || 'File could not be processed.'}</span></li>)}</ul> : <small>No file-level details were returned. Open the process log for the exact backend output.</small>}
+              </div>}
+              <button className="pipeline-card-ok" type="button" disabled={pipelineBusy} onClick={() => setShowPipelineCard(false)}>{pipelineBusy ? 'Importing…' : 'Close'}</button>
+            </section>
+          </div>
+        )}
+
+        {showTradeDataPlan && (
+          <div className="trade-data-plan-backdrop" role="presentation" onClick={() => setShowTradeDataPlan(false)}>
+            <section
+              className="trade-data-plan-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="trade-data-plan-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="trade-data-plan-icon"><AlertTriangle size={21} /></div>
+              <h2 id="trade-data-plan-title">Delete Trade Data</h2>
+              <p className="trade-data-plan-status">Planned — not implemented</p>
+              <p className="trade-data-plan-purpose">
+                Purpose: permanently remove trade data from all related Supabase tables.
+              </p>
+              <div className="trade-data-plan-section">
+                <strong>Planned implementation</strong>
+                <ol>
+                  <li>Confirm the exact date range and trades.</li>
+                  <li>Remove related allocations, positions, splits, and merges in the correct order.</li>
+                  <li>Remove the original trade records from all related tables.</li>
+                  <li>Verify the tables, counters, and cached views after removal.</li>
+                </ol>
+              </div>
+              <div className="trade-data-plan-note">
+                No deletion will happen from this button yet.
+              </div>
+              <button type="button" className="trade-data-plan-close" onClick={() => setShowTradeDataPlan(false)}>
+                Close
+              </button>
             </section>
           </div>
         )}
@@ -786,16 +1241,17 @@ export function StrategyAllocation() {
 
         <div className="alloc-stats">
           <Stat tone="blue" icon={<Users size={21} />} label="Open Trades" value={String(counts['Open Trades'])} />
-          <Stat tone="red" icon={<SlidersHorizontal size={21} />} label="Unassigned Trades" value={String(counts['Unassigned Trades'])} />
-          <Stat tone="green" icon={<Users size={21} />} label="Allocated Trades" value={String(counts['Allocated Trades'])} />
+          <Stat tone="red" icon={<SlidersHorizontal size={21} />} label="Unassigned Trades" value={String(counts['Unassigned Trades'])} onClick={() => setBucketFilter((current) => current === 'unassigned' ? 'all' : 'unassigned')} active={bucketFilter === 'unassigned'} />
+          <Stat tone="green" icon={<Users size={21} />} label="Allocated Trades" value={String(counts['Allocated Trades'])} onClick={() => setBucketFilter((current) => current === 'allocated' ? 'all' : 'allocated')} active={bucketFilter === 'allocated'} />
           <Stat tone="green" icon={<ShieldCheck size={21} />} label="Strategies" value={String(counts.Strategies)} />
         </div>
 
         <Section
-          title={`Open Trades + Unassigned Trades (${combinedVisible.length})`}
-          rows={combinedVisible}
-          onAllocate={(row) => navigate(`/instrument-allocation?instrument=${encodeURIComponent(row.instrument)}&expiry=${encodeURIComponent(row.expiry)}&strike=${encodeURIComponent(row.strike)}&option=${encodeURIComponent(row.optionType)}&allocationStatus=${encodeURIComponent(row.strategy && row.strategy !== 'Unassigned' ? 'Allocated' : 'Unassigned')}`)}
+          title={`${bucketFilter === 'allocated' ? 'Allocated Trades' : bucketFilter === 'unassigned' ? 'Unassigned Trades' : 'Open Trades + Unassigned Trades'} (${bucketVisible.length})`}
+          rows={bucketVisible}
+          onAllocate={(row) => navigate(`/instrument-allocation?instrument=${encodeURIComponent(row.instrument)}&expiry=${encodeURIComponent(row.expiry)}&strike=${encodeURIComponent(row.strike)}&option=${encodeURIComponent(row.optionType)}&allocationStatus=${encodeURIComponent(row.strategy && row.strategy !== 'Unassigned' ? 'Allocated' : 'Unassigned')}${date === 'All Dates' ? '' : `&date=${encodeURIComponent(parseCalendarDisplayDate(date))}`}`)}
           onDelete={deleteAllocatedTrade}
+          onDeleteMany={setRemoveConfirmRows}
         />
       </main>
       {showProcessLog && (
@@ -807,9 +1263,9 @@ export function StrategyAllocation() {
                 <h2 id="strategy-process-monitor-title">Process Monitor</h2>
               </div>
               <button className="pipeline-log-close" type="button" onClick={() => setShowProcessLog(false)} aria-label="Close process monitor">×</button>
-              <div className={`pipeline-log-status ${pipelineLog?.running ? 'running' : 'idle'}`}>
-                <Activity size={14} />
-                {pipelineLog?.running ? 'Live output' : 'Latest snapshot'}
+              <div className={`pipeline-log-status ${pipelineLog?.running ? 'running' : pipelineLog?.stage === 'error' || pipelineError ? 'error' : 'idle'}`}>
+                {pipelineLog?.running ? <Activity size={14} /> : pipelineLog?.stage === 'error' || pipelineError ? <X size={14} /> : <Activity size={14} />}
+                {pipelineLog?.running ? 'Live output' : pipelineLog?.stage === 'error' || pipelineError ? 'Failed' : 'Latest snapshot'}
               </div>
             </div>
             <div className="pipeline-log-meta">
@@ -825,11 +1281,34 @@ export function StrategyAllocation() {
         </div>
       )}
       {strategySetupOpen && <StrategySetupModal mode="create" rows={strategyMasterRows} onClose={() => setStrategySetupOpen(false)} onSaved={async () => {
-        const [allocationData, masterData] = await Promise.all([loadStrategyAllocation(), loadStrategyMaster()]);
+        const { allocation: allocationData, master: masterData } = await preloadStrategyAllocation(true);
         setRows(mapAllocationRows(allocationData.rows ?? []));
         setCounts(allocationData.counts);
         setStrategyMasterRows(masterData.rows ?? []);
       }} />}
+      {removeConfirmRows.length > 0 && (
+        <div className="allocation-delete-modal-backdrop" role="presentation">
+          <section className="allocation-delete-modal" role="dialog" aria-modal="true" aria-labelledby="allocation-delete-title">
+            {deletingTrade ? (
+              <>
+                <div className="allocation-delete-spinner" aria-hidden="true" />
+                <h2 id="allocation-delete-title">Removing allocation…</h2>
+                <p>Please wait while the trade and related records are removed.</p>
+              </>
+            ) : (
+              <>
+                <div className="allocation-delete-icon"><Trash2 size={20} /></div>
+                <h2 id="allocation-delete-title">Remove {removeConfirmRows.length === 1 ? 'allocated trade?' : `${removeConfirmRows.length} allocated trades?`}</h2>
+                <p>{removeConfirmRows.length === 1 ? `Remove trade ${removeConfirmRows[0].order} and all related allocation, split, and merge records?` : 'Remove all selected trades and their related allocation, split, and merge records?'}</p>
+                <div className="allocation-delete-actions">
+                  <button type="button" className="allocation-delete-cancel" onClick={() => setRemoveConfirmRows([])}>Cancel</button>
+                  <button type="button" className="allocation-delete-confirm" onClick={confirmRemoveAllocatedTrades}>Remove</button>
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

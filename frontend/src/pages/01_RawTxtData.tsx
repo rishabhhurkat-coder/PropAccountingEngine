@@ -1,15 +1,16 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, Check, Loader2, Play, Search, Terminal } from 'lucide-react';
+import { Activity, AlertCircle, Check, Loader2, Play, Search, Terminal } from 'lucide-react';
 import {
   loadImportPipelineLog,
+  loadImportFiles,
   loadRawTxtData,
   proceedToMerge,
   runImportPipeline,
-  uploadImportFile,
+  uploadImportFiles,
   type PipelineLogResponse,
 } from '../lib/api';
 import { ImportedFile, RawTrade, Stage } from '../types';
-import { ImportFileCard, PrimaryButton, SectionHeader, StickyActionBar, WorkflowTimeline } from '../components/PipelineUI';
+import { ImportFileCard, pipelineTimelineStage, PrimaryButton, SectionHeader, StickyActionBar, WorkflowTimeline } from '../components/PipelineUI';
 import { RawTradesTable } from '../components/RawTradesTable';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -101,7 +102,7 @@ export function RawTxtData() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState(filesSeed);
   const [trades, setTrades] = useState<RawTrade[]>([]);
-  const [stage, setStage] = useState<Stage>('ready');
+  const [stage, setStage] = useState<Stage>('idle');
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [pipelineLog, setPipelineLog] = useState<PipelineLogResponse | null>(null);
@@ -110,10 +111,12 @@ export function RawTxtData() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
   const [allocationFilter, setAllocationFilter] = useState<'all' | 'allocated' | 'unallocated'>('all');
+  const refreshingRef = useRef(false);
 
   async function refreshPipelineLog() {
     const data = await loadImportPipelineLog();
     setPipelineLog(data);
+    setStage(pipelineTimelineStage(data.stage, data.running));
   }
 
   async function refreshRawTxtData() {
@@ -122,8 +125,35 @@ export function RawTxtData() {
     setTrades(mapCsvRows(data.rows));
   }
 
+  async function refreshDataWithRetry() {
+    let refreshed = { rowCount: 0, fileCount: 0 };
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        const [tradeData, fileData] = await Promise.all([loadRawTxtData(), loadImportFiles()]);
+        if (!tradeData.success) throw new Error(tradeData.message ?? 'Unable to load raw trades');
+        setTrades(mapCsvRows(tradeData.rows));
+        setFiles(fileData.files ?? []);
+        refreshed = { rowCount: tradeData.rows.length, fileCount: fileData.files?.length ?? 0 };
+        if (attempt < 4) await new Promise((resolve) => window.setTimeout(resolve, 500));
+      } catch (error) {
+        if (attempt === 4) throw error;
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+      }
+    }
+    return refreshed;
+  }
+
   useEffect(() => {
-    refreshRawTxtData().catch(() => undefined);
+    refreshDataWithRetry().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (refreshingRef.current) return;
+      refreshingRef.current = true;
+      refreshDataWithRetry().catch(() => undefined).finally(() => { refreshingRef.current = false; });
+    }, 5000);
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -189,9 +219,12 @@ export function RawTxtData() {
     event.target.value = '';
     if (!selected.length) return;
     try {
-      setFiles((await uploadImportFile(selected[0])).files);
-      setNotice(`Selected ${selected[0].name}. Click Run Import Pipeline to process it.`);
+      const response = await uploadImportFiles(selected);
+      setFiles(response.files);
+      setStage('files');
+      setNotice(response.message ?? `${selected.length} TXT file(s) uploaded. Click Run Import Pipeline to process them.`);
     } catch (error) {
+      setStage('error');
       setNotice(error instanceof Error ? error.message : 'Unable to select TXT file');
     }
   }
@@ -204,14 +237,17 @@ export function RawTxtData() {
       const result = await runImportPipeline();
       await refreshPipelineLog().catch(() => undefined);
       if (result.success) {
-        await refreshRawTxtData();
-        setFiles((current) => [...current]);
+        const refreshed = await refreshDataWithRetry();
         setStage('ready');
-        setNotice('Pipeline completed successfully');
+        const fileLabel = `${refreshed.fileCount} file${refreshed.fileCount === 1 ? '' : 's'} processed`;
+        const rowLabel = `${refreshed.rowCount.toLocaleString()} row${refreshed.rowCount === 1 ? '' : 's'} loaded`;
+        setNotice(`Success — ${result.message ?? 'Pipeline completed successfully'}. ${fileLabel}; ${rowLabel}. Supabase data is updated.`);
       } else {
+        setStage('error');
         setNotice(result.message ?? `Pipeline failed${result.failed_step ? ` at ${result.failed_step}` : ''}`);
       }
     } catch (error) {
+      setStage('error');
       setNotice(error instanceof Error ? error.message : 'Pipeline failed');
     } finally {
       await refreshPipelineLog().catch(() => undefined);
@@ -242,7 +278,7 @@ export function RawTxtData() {
             <h1>Raw Trade Import</h1>
             <p>Import your broker TXT files and verify them before processing.</p>
           </div>
-          <input ref={inputRef} type="file" accept=".txt,text/plain" hidden onChange={pick} />
+          <input ref={inputRef} type="file" accept=".txt,text/plain" multiple hidden onChange={pick} />
           <div className="workspace-actions">
             <button
               type="button"
@@ -263,8 +299,8 @@ export function RawTxtData() {
         </header>
 
         {notice && (
-          <div className="notice">
-            <Check size={15} />
+          <div className={`notice ${stage === 'error' ? 'notice-error' : stage === 'ready' ? 'notice-success' : 'notice-info'}`}>
+            {stage === 'error' ? <AlertCircle size={15} /> : <Check size={15} />}
             {notice}
             <button onClick={() => setNotice('')}>x</button>
           </div>
@@ -279,9 +315,9 @@ export function RawTxtData() {
                 <h2 id="raw-process-monitor-title">Process Monitor</h2>
               </div>
               <button className="pipeline-log-close" type="button" onClick={() => setShowProcessLog(false)} aria-label="Close process monitor">×</button>
-              <div className={`pipeline-log-status ${pipelineLog?.running ? 'running' : 'idle'}`}>
-                <Activity size={14} />
-                {pipelineLog?.running ? 'Live output' : 'Latest snapshot'}
+              <div className={`pipeline-log-status ${pipelineLog?.running ? 'running' : pipelineLog?.stage === 'error' ? 'error' : 'idle'}`}>
+                {pipelineLog?.running ? <Activity size={14} /> : pipelineLog?.stage === 'error' ? <AlertCircle size={14} /> : <Terminal size={14} />}
+                {pipelineLog?.running ? 'Live output' : pipelineLog?.stage === 'error' ? 'Failed' : 'Latest snapshot'}
               </div>
             </div>
             <div className="pipeline-log-meta">
@@ -304,7 +340,12 @@ export function RawTxtData() {
           </div>
         )}
 
-        <WorkflowTimeline stage={stage} onSelectFile={() => inputRef.current?.click()} />
+        <WorkflowTimeline
+          stage={stage}
+          status={stage === 'error' ? 'error' : stage === 'ready' ? 'success' : stage === 'files' ? 'files' : stage === 'idle' ? 'idle' : 'running'}
+          message={pipelineLog?.message}
+          onSelectFile={() => inputRef.current?.click()}
+        />
 
         <div className="workspace-columns">
           <div className="workspace-left">

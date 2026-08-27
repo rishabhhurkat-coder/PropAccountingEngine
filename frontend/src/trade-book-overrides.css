@@ -1,6 +1,9 @@
 .reference-add-button{display:none!important}
 .reference-date-button{display:none!important}
 .reference-trade-header h1{color:#155eef;font-size:31px}
+.reference-count-alert{height:30px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:1px solid #f2b8bd;border-radius:999px;background:#fff0f1;color:#c52236;font-size:10px;font-weight:800;white-space:nowrap}
+.reference-count-alert.good{border-color:#bde8d1;background:#ecfbf3;color:#087b55}
+.reference-count-alert.checking{border-color:#cbd9f8;background:#f3f7ff;color:#315cef}
 .app-shell.trade-book-page .alloc-brand{
   transform:translateX(-5%)!important;
 }
@@ -8,7 +11,11 @@
 .app-shell.trade-book-page .alloc-sidebar .alloc-nav-section:last-of-type .alloc-nav-text{
   font-weight:500!important;
 }
-.reference-table th:nth-child(3),.reference-table td:nth-child(3){display:none}
+.trade-id-column{display:none!important}
+.trade-select-column{width:28px!important;padding:0 6px!important;text-align:center!important}
+.trade-select-column input{width:14px;height:14px;margin:0;accent-color:#3265e9;cursor:pointer}
+.reference-tradebook-table td.trade-strategy-cell{overflow:visible!important;text-overflow:clip!important;position:relative;z-index:3}
+.reference-tradebook-table td.trade-strategy-cell .reference-strategy{max-width:none!important;overflow:visible!important;text-overflow:clip!important}
 .reference-table th:nth-child(1),.reference-table td:nth-child(1),
 .reference-table th:nth-child(2),.reference-table td:nth-child(2),
 .reference-table th:nth-child(6),.reference-table td:nth-child(6),
@@ -53,7 +60,34 @@
 .reference-dropdown-option:hover,.reference-dropdown-option.active{background:#eef3ff;color:#2e62ed}
 
 .reference-table th,.reference-table th .reference-sort-button{text-transform:uppercase!important}
-.reference-tradebook-table{table-layout:fixed;min-width:0;width:100%}
+.reference-tradebook-table{table-layout:fixed;min-width:100%;width:100%}
+.reference-tradebook-table.open-trade-layout{width:99.3%;min-width:99.3%}
+.reference-tradebook-table.open-trade-layout col.trade-col-select{width:3%}
+.reference-tradebook-table.open-trade-layout col.trade-col-side{display:table-column;width:7%}
+.reference-tradebook-table.open-trade-layout col.trade-col-date{width:8%}
+.reference-tradebook-table.open-trade-layout col.trade-col-time{width:7%}
+.reference-tradebook-table.open-trade-layout col.trade-col-scrip{width:8%}
+.reference-tradebook-table.open-trade-layout col.trade-col-expiry{width:7%}
+.reference-tradebook-table.open-trade-layout col.trade-col-strike{width:7.2%}
+.reference-tradebook-table.open-trade-layout col.trade-col-option{width:7%}
+.reference-tradebook-table.open-trade-layout col.trade-col-qty{width:7%}
+.reference-tradebook-table.open-trade-layout col.trade-col-price{width:8%}
+.reference-tradebook-table.open-trade-layout col.trade-col-cmp{width:5%}
+.reference-tradebook-table.open-trade-layout col.trade-col-pl-amt{width:7%}
+.reference-tradebook-table.open-trade-layout col.trade-col-strategy{width:10.8%}
+.reference-tradebook-table.open-trade-layout col.trade-col-status{width:7%}
+.reference-tradebook-table.open-trade-layout col.trade-col-actions{width:5.6%}
+.reference-tradebook-table.closed-trade-layout{width:100%;min-width:100%}
+.reference-tradebook-table.closed-trade-layout th:last-child,
+.reference-tradebook-table.closed-trade-layout td:last-child{padding-right:24px!important}
+.reference-tradebook-table.closed-trade-layout td:nth-child(4),
+.reference-tradebook-table.closed-trade-layout td:nth-child(5),
+.reference-tradebook-table.closed-trade-layout td:nth-child(8),
+.reference-tradebook-table.closed-trade-layout td:nth-child(9),
+.reference-tradebook-table.closed-trade-layout td:nth-child(10),
+.reference-tradebook-table.closed-trade-layout td:nth-child(11),
+.reference-tradebook-table.closed-trade-layout td:nth-child(12),
+.reference-tradebook-table.closed-trade-layout td:nth-child(13){color:#000!important}
 .reference-tradebook-table col.trade-col-trade-id{width:0;display:none}
 .reference-tradebook-table col.trade-col-pl-amt{display:table-column}
 .reference-table th,.reference-tradebook-table.without-pl-amt th,.reference-tradebook-table.with-pl-amt th{text-align:left!important;font-weight:700!important;color:#155eef!important}
@@ -70,3 +104,159 @@
 .reference-tradebook-table .reference-side-badge,.reference-tradebook-table .reference-option-badge,.reference-tradebook-table .reference-status,.reference-tradebook-table .reference-strategy{font-size:9px}
 .reference-tradebook-table .reference-strategy{display:inline-flex;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;justify-content:flex-start}
 .reference-tradebook-table .reference-row-actions>button,.reference-tradebook-table .reference-menu-wrap>button{margin-left:0}
+
+/* Match the Strategy Allocation toolbar and keep filters behind one clear control. */
+.reference-trade-card-head{
+  align-items:center;
+}
+
+.trade-book-filter-controls{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-left:0;
+}
+
+.trade-book-header-tools{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-left:auto;
+}
+
+.trade-book-search.table-search{
+  width:240px;
+  height:32px;
+  border:1px solid #dfe6f3;
+  border-radius:7px;
+  color:#344a7b;
+  background:#fff;
+  padding:0 12px;
+  font:500 11px 'DM Sans';
+}
+
+.trade-book-search.table-search input{
+  border:0;
+  outline:0;
+  width:100%;
+  color:#25355f;
+  font:inherit;
+}
+
+.trade-book-search.table-search input::placeholder{color:#8c9ab1}
+
+.trade-book-filter-icon{
+  width:38px;
+  min-width:38px;
+  padding:0!important;
+  justify-content:center;
+}
+
+.trade-book-selection-toggle{
+  width:38px;
+  min-width:38px;
+  height:32px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #dfe6f3;
+  border-radius:7px;
+  background:#fff;
+  color:#3168ed;
+  cursor:pointer;
+}
+.trade-book-selection-toggle:hover,.trade-book-selection-toggle.active{background:#eef3ff;border-color:#9eb9f4;color:#244fd4}
+
+.trade-book-header-tools .reference-table-actions{padding-bottom:0}
+
+.trade-book-filter-panel{
+  height:auto!important;
+  min-height:64px;
+  display:grid!important;
+  grid-template-columns:repeat(6,minmax(100px,1fr)) auto;
+  align-items:center;
+  gap:10px;
+  margin:0 0 12px!important;
+  padding:10px 12px!important;
+  border-color:#dfe7f4!important;
+  border-radius:9px!important;
+  background:#f8faff!important;
+  box-shadow:none!important;
+}
+
+.trade-book-filter-panel .reference-filter-field{
+  width:auto;
+  height:42px;
+  padding:0 12px;
+}
+
+.trade-book-filter-panel .reference-filter-field>span{font-size:8px}
+.trade-book-filter-panel .reference-filter-field.date-field div{font-size:10px}
+.trade-book-filter-panel .reference-dropdown-field{z-index:4}
+.trade-book-filter-panel .reference-dropdown-button{font-size:10px}
+.trade-book-filter-panel .table-filter-date{min-width:0}
+.trade-book-filter-panel .table-filter-clear{align-self:end}
+
+.reference-sync-card{
+  height:30px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:0 10px;
+  border:1px solid #dce5f3;
+  border-radius:999px;
+  background:#f8fbff;
+  color:#60708d;
+  font-size:10px;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.reference-sync-card.verified{border-color:#bde8d1;background:#ecfbf3;color:#087b55}
+.reference-sync-card.mismatch{border-color:#f2c4c7;background:#fff4f4;color:#b53e49}
+.reference-sync-card.checking{border-color:#cbd9f8;background:#f3f7ff;color:#315cef}
+
+.trade-book-action-notice{margin:0 0 10px!important}
+.trade-book-error{margin:-3px 0 12px!important}
+.reference-export-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:58px}
+.reference-export-button svg{color:currentColor}
+
+/* Improve readability across every Trade Book view without changing layout. */
+.app-shell.trade-book-page .reference-tradebook-table{font-size:13.2px!important;color:#173a78}
+.app-shell.trade-book-page .reference-tradebook-table th,
+.app-shell.trade-book-page .reference-tradebook-table th .reference-sort-button{font-size:12px!important;color:#155eef!important}
+.app-shell.trade-book-page .reference-tradebook-table td{font-size:13.2px!important;color:#173a78!important}
+.app-shell.trade-book-page .reference-tradebook-table td.trade-strategy-cell,
+.app-shell.trade-book-page .reference-tradebook-table td.trade-strategy-cell .reference-strategy{color:#155eef!important}
+.app-shell.trade-book-page .reference-tradebook-table .reference-side-badge,
+.app-shell.trade-book-page .reference-tradebook-table .reference-option-badge,
+.app-shell.trade-book-page .reference-tradebook-table .reference-status{font-size:10.8px!important}
+
+/* Keep all table typography black as requested; preserve existing backgrounds and borders. */
+.app-shell.trade-book-page .reference-tradebook-table td,
+.app-shell.trade-book-page .reference-tradebook-table td *{color:#000!important}
+.app-shell.trade-book-page .reference-tradebook-table th,
+.app-shell.trade-book-page .reference-tradebook-table th *{color:#155eef!important}
+.app-shell.trade-book-page .reference-tradebook-table .reference-side-badge.buy{color:#0b9b60!important}
+.app-shell.trade-book-page .reference-tradebook-table .reference-side-badge.sell{color:#ef4e64!important}
+.app-shell.trade-book-page .reference-tradebook-table .reference-option-badge.ce{color:#0b9b60!important}
+.app-shell.trade-book-page .reference-tradebook-table .reference-option-badge.pe{color:#ef4e64!important}
+.app-shell.trade-book-page .reference-tradebook-table .reference-status.open{color:#07955a!important}
+.app-shell.trade-book-page .reference-tradebook-table .reference-status.closed{color:#78859a!important}
+.app-shell.trade-book-page .reference-tradebook-table .reference-mtm.positive{color:#08a461!important}
+.app-shell.trade-book-page .reference-tradebook-table .reference-mtm.negative{color:#f02e45!important}
+.app-shell.trade-book-page .reference-tradebook-table td .strategy-color-badge,.app-shell.trade-book-page .reference-tradebook-table td .strategy-color-badge span,.app-shell.trade-book-page .reference-tradebook-table td .strategy-color-badge svg{color:var(--strategy-color)!important;stroke:var(--strategy-color)!important}
+.app-shell.trade-book-page .reference-tradebook-table td .strategy-color-badge{border-radius:6px!important}
+.app-shell.trade-book-page .reference-tradebook-table td .strategy-color-badge{font-size:13.2px!important;font-weight:600!important;line-height:1.2!important}
+.app-shell.trade-book-page .reference-tradebook-table.closed-trade-layout th,
+.app-shell.trade-book-page .reference-tradebook-table.closed-trade-layout td{padding-left:10px!important;padding-right:10px!important}
+.app-shell.trade-book-page .reference-tradebook-table .reference-row-actions>button,
+.app-shell.trade-book-page .reference-tradebook-table .reference-row-actions>button svg{color:#d13f4c!important;stroke:#d13f4c!important}
+
+@media(max-width:1100px){
+  .reference-trade-card-head{align-items:flex-start;flex-wrap:wrap;height:auto;padding-top:12px}
+  .trade-book-header-tools{order:3;width:100%;margin-left:0}
+  .trade-book-filter-controls{flex:1}
+  .trade-book-search.table-search{flex:1;width:auto}
+  .trade-book-filter-panel{grid-template-columns:repeat(3,minmax(130px,1fr))}
+}

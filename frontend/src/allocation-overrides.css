@@ -21,16 +21,56 @@
 .alloc-table{min-width:0;width:100%;table-layout:fixed}
 .alloc-table th,.alloc-table td{color:#111827}
 .alloc-table th,.alloc-table td{text-overflow:ellipsis;overflow:hidden}
-.alloc-table th:nth-child(10),.alloc-table td:nth-child(10){width:190px;overflow:visible;text-overflow:clip}
+.alloc-table td.alloc-date-cell{overflow:visible;text-overflow:clip;white-space:nowrap}
+.alloc-table:not(.selection-mode) th:nth-child(10),.alloc-table:not(.selection-mode) td:nth-child(10),.alloc-table.selection-mode th:nth-child(11),.alloc-table.selection-mode td:nth-child(11){width:190px;overflow:visible;text-overflow:clip}
 .alloc-main:not(.inst-page) .alloc-table th{color:#155eef}
 .alloc-table{font-size:11.5px}
 .alloc-table th{font-size:10.35px}
 .alloc-table td{height:49px}
+.alloc-main:not(.inst-page) .alloc-table{font-size:13.8px;color:#173a78}
+.alloc-main:not(.inst-page) .alloc-table th{font-size:12.42px;color:#155eef}
+.alloc-main:not(.inst-page) .alloc-table td{font-size:13.8px;color:#173a78}
+.alloc-main:not(.inst-page) .alloc-table td.instrument{color:#102f73;font-weight:700}
+.alloc-main:not(.inst-page) .alloc-table .pe-badge{font-size:12px}
+.alloc-main:not(.inst-page) .alloc-table .allocate-btn{font-size:12px;color:#155eef}
+.alloc-main:not(.inst-page) .alloc-table,
+.alloc-main:not(.inst-page) .alloc-table td,
+.alloc-main:not(.inst-page) .alloc-table td *{color:#000!important}
+.alloc-main:not(.inst-page) .alloc-table th,
+.alloc-main:not(.inst-page) .alloc-table th *{color:#155eef!important}
+.alloc-main:not(.inst-page) .alloc-table .alloc-trade-badge.buy{color:#0b9b60!important}
+.alloc-main:not(.inst-page) .alloc-table .alloc-trade-badge.sell{color:#ef4e64!important}
+.alloc-main:not(.inst-page) .alloc-table .alloc-option-badge.ce{color:#ef4e64!important}
+.alloc-main:not(.inst-page) .alloc-table .alloc-option-badge.pe{color:#0b9b60!important}
+.alloc-main:not(.inst-page) .alloc-table .alloc-delete-button,
+.alloc-main:not(.inst-page) .alloc-table .alloc-delete-button svg{color:#d13f4c!important;stroke:#d13f4c!important}
+.alloc-main:not(.inst-page) .alloc-table .allocate-btn{color:#3554ed!important}
+.alloc-main:not(.inst-page) .alloc-table .alloc-trade-badge{font-size:10.8px!important}
+.alloc-main:not(.inst-page) .alloc-table .alloc-option-badge{font-size:11.04px!important}
 .alloc-option-badge{font-size:9.2px;padding:5px 9px}
 .allocate-btn{height:30px;font-size:11.5px;padding:0 11px}
 .alloc-table th:last-child,.alloc-table td:last-child{text-align:center}
 .alloc-delete-button{border:0;background:transparent;color:#3153eb;display:inline-grid;place-items:center;cursor:pointer}
 .alloc-delete-button:disabled{color:#aab5ca;cursor:not-allowed}
+.alloc-main:not(.inst-page) .alloc-table .alloc-delete-button:disabled,
+.alloc-main:not(.inst-page) .alloc-table .alloc-delete-button:disabled svg{color:#aab5ca!important;stroke:#aab5ca!important}
+.alloc-select-column{width:34px!important;text-align:center!important}
+.alloc-select-column input{width:15px;height:15px;margin:0;accent-color:#315cef;cursor:pointer}
+.alloc-select-column input:disabled{opacity:.35;cursor:not-allowed}
+.table-bulk-remove{height:38px;display:inline-flex;align-items:center;gap:6px;border:1px solid #f0c5c9;border-radius:9px;background:#fff4f4;color:#b33f48;padding:0 11px;font:700 11px inherit;cursor:pointer;white-space:nowrap}
+.table-bulk-remove:hover{background:#ffe8e9;border-color:#e79ca4}
+.table-select-button{width:38px;min-width:38px;padding:0!important;justify-content:center;border-color:#d4def2!important;color:#315cef!important;white-space:nowrap}
+.table-select-button.active{background:#eef3ff!important;border-color:#9eb9f4!important;color:#244fd4!important}
+.strategy-cell{font-weight:700!important}
+.strategy-cell-button{display:block;width:100%;padding:0;border:0;background:transparent;color:#000!important;text-align:left;font-family:inherit;font-size:inherit;font-weight:700;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.strategy-cell-button:hover,.strategy-cell-button:focus-visible{color:#3153eb!important;text-decoration:underline;text-underline-offset:3px;outline:none}
+.strategy-cell-button.strategy-color-badge{display:inline-flex;width:auto;max-width:100%;align-items:center;gap:6px;padding:5px 8px;border:1px solid transparent;border-radius:6px;text-decoration:none;white-space:nowrap}
+.strategy-cell-button.strategy-color-badge span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strategy-cell-button.strategy-color-badge:hover,.strategy-cell-button.strategy-color-badge:focus-visible{text-decoration:none;filter:brightness(.98);outline:2px solid currentColor;outline-offset:1px}
+.strategy-color-badge.violet{background:#f2ecff;border-color:#d9c8ff;color:#6941c6!important}.strategy-color-badge.pink{background:#fff0f4;border-color:#ffc8d8;color:#dc4778!important}.strategy-color-badge.orange{background:#fff4e8;border-color:#ffd19d;color:#d97706!important}.strategy-color-badge.yellow{background:#fff9df;border-color:#f4df88;color:#c99500!important}.strategy-color-badge.green{background:#eaf9ee;border-color:#b8e9c2;color:#16a05d!important}.strategy-color-badge.cyan{background:#e8f9fb;border-color:#b7e8ee;color:#1597a8!important}.strategy-color-badge.blue{background:#edf3ff;border-color:#c6d9ff;color:#3d73db!important}.strategy-color-badge.purple{background:#f4efff;border-color:#d8c8ff;color:#8054d6!important}.strategy-color-badge.magenta{background:#fff0fb;border-color:#f5c5e9;color:#c344bd!important}
+.strategy-color-badge.violet{--strategy-color:#6941c6}.strategy-color-badge.pink{--strategy-color:#dc4778}.strategy-color-badge.orange{--strategy-color:#d97706}.strategy-color-badge.yellow{--strategy-color:#c99500}.strategy-color-badge.green{--strategy-color:#16a05d}.strategy-color-badge.cyan{--strategy-color:#1597a8}.strategy-color-badge.blue{--strategy-color:#3d73db}.strategy-color-badge.purple{--strategy-color:#8054d6}.strategy-color-badge.magenta{--strategy-color:#c344bd}
+.inst-back-btn{width:54px!important;height:54px!important;flex:0 0 54px;padding:0!important;justify-content:center;gap:0}
+.inst-back-btn svg{width:24px;height:24px}
 .alloc-main:not(.inst-page) .alloc-card h2{font-size:0}
 .alloc-main:not(.inst-page) .alloc-card h2::after{font-size:18px}
 .alloc-main:not(.inst-page) .alloc-card:first-of-type h2::after{content:'Open Trades'}
@@ -63,8 +103,9 @@
 .app-shell.sidebar-collapsed .alloc-sidebar{
   width:68px;
   padding:10px 6px 10px;
-  overflow:hidden;
+  overflow:visible;
   align-items:center;
+  z-index:200;
 }
 
 .app-shell.sidebar-collapsed .alloc-brand{
@@ -97,12 +138,53 @@
 }
 
 .app-shell.sidebar-collapsed .alloc-nav-item{
+  position:relative;
   justify-content:center;
   padding:0;
   height:40px;
   gap:0;
   width:40px;
   margin:0 auto;
+}
+
+/* In the icon-only sidebar, reveal the full destination name on hover/focus.
+   The popover is deliberately outside the narrow rail so labels remain
+   readable without changing the collapsed layout. */
+.app-shell.sidebar-collapsed .alloc-nav-item[data-tooltip]::after,
+.app-shell.sidebar-collapsed .sidebar-logout[data-tooltip]::after{
+  content:attr(data-tooltip);
+  position:absolute;
+  left:calc(100% + 10px);
+  top:50%;
+  z-index:501;
+  transform:translate(0,-50%) translateX(-4px);
+  opacity:0;
+  pointer-events:none;
+  white-space:nowrap;
+  padding:8px 11px;
+  border:1px solid #d7e4f7;
+  border-radius:8px;
+  background:#ffffff;
+  color:#173463;
+  box-shadow:0 10px 24px rgba(28,70,137,.18);
+  font-size:12px;
+  font-weight:600;
+  line-height:1.2;
+  transition:opacity .16s ease, transform .16s ease;
+}
+
+.app-shell.sidebar-collapsed .alloc-nav-item[data-tooltip]:hover::after,
+.app-shell.sidebar-collapsed .alloc-nav-item[data-tooltip]:focus-visible::after,
+.app-shell.sidebar-collapsed .sidebar-logout[data-tooltip]:hover::after,
+.app-shell.sidebar-collapsed .sidebar-logout[data-tooltip]:focus-visible::after{
+  opacity:1;
+  transform:translate(0,-50%) translateX(0);
+}
+
+.app-shell.sidebar-collapsed .sidebar-logout[data-tooltip]::after{
+  border-color:#f2b0bc;
+  background:#fff7f8;
+  color:#b91f47;
 }
 
 .app-shell.sidebar-collapsed .alloc-nav-icon{
@@ -289,12 +371,17 @@
 }
 
 .alloc-hl-logo{
-  width:234px;
+  width:269px;
+  max-width:none;
+  max-height:60px;
+  height:auto;
+  flex:none;
+  transform:translateX(-25%);
 }
 
 .alloc-hl-brand{
-  padding:0 0 8px 0;
-  margin:0;
+  padding:0 0 24px 0;
+  margin:0 0 4px 0;
   border:0;
   box-shadow:none;
   align-items:flex-start;
@@ -305,6 +392,407 @@
 .alloc-hl-brand img{
   border:0;
   display:block;
+}
+
+.alloc-hl-brand-toggle{
+  width:100%;
+  border:0;
+  background:transparent;
+  cursor:pointer;
+  text-align:left;
+}
+
+.alloc-hl-brand-toggle:hover{
+  background:#f4f7ff;
+  border-radius:9px;
+}
+
+.alloc-hl-brand-toggle:focus-visible{
+  outline:2px solid #3153eb;
+  outline-offset:3px;
+}
+
+.app-shell.sidebar-collapsed .alloc-hl-brand-toggle{
+  justify-content:center;
+  padding:0 0 20px;
+  margin-bottom:4px;
+}
+
+.app-shell.sidebar-collapsed .alloc-hl-logo{
+  width:60px;
+  max-width:none;
+  max-height:60px;
+  height:auto;
+  flex:none;
+  transform:none;
+}
+
+.table-filter-date-controls{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  position:relative;
+}
+
+.table-filter-date-controls .matalia-calendar{
+  flex:0 0 132px;
+  min-width:0;
+}
+
+.table-filter-date-controls .matalia-calendar-trigger{
+  height:30px;
+  padding:0 8px;
+  border-color:#d7e0ef;
+  border-radius:6px;
+  color:#22365f;
+  font-size:10px;
+}
+
+.table-filter-date-controls .matalia-calendar-trigger strong{
+  font-size:10px;
+}
+
+.table-filter-date-controls input{
+  flex:1;
+  min-width:80px;
+}
+
+.table-filter-date-suggestions{
+  position:absolute;
+  top:calc(100% + 6px);
+  right:0;
+  left:138px;
+  z-index:80;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  padding:6px;
+  border:1px solid #d7e2f2;
+  border-radius:9px;
+  background:#fff;
+  box-shadow:0 14px 28px rgba(31,54,91,.16);
+}
+
+.table-filter-date-suggestions button{
+  width:100%;
+  min-height:28px;
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  color:#233b68;
+  padding:0 9px;
+  text-align:left;
+  font:600 10px 'DM Sans';
+  cursor:pointer;
+}
+
+.table-filter-date-suggestions button:hover,
+.table-filter-date-suggestions button:focus-visible{
+  background:#edf3ff;
+  color:#2455db;
+  outline:0;
+}
+
+/* Keep calendar selection and typed date entry in one shared field. */
+.table-filter-date-controls{
+  height:32px;
+  display:flex;
+  align-items:center;
+  gap:0;
+  padding:0 4px;
+  border:1px solid #d7e0ef;
+  border-radius:8px;
+  background:linear-gradient(180deg,#fff,#f8fbff);
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+
+.table-filter-date-controls:focus-within{
+  border-color:#4b75ef;
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(49,92,239,.09);
+}
+
+.table-filter-date-controls .matalia-calendar{
+  flex:0 0 126px;
+  min-width:0;
+}
+
+.table-filter-date-controls .matalia-calendar-trigger{
+  height:28px;
+  padding:0 5px;
+  border:0;
+  border-radius:5px;
+  background:transparent;
+  box-shadow:none;
+  font-size:10px;
+}
+
+.table-filter-date-controls .matalia-calendar-trigger:hover{
+  background:#edf3ff;
+}
+
+.table-filter-date-controls input{
+  flex:1;
+  min-width:0;
+  height:26px;
+  padding:0 7px 0 10px;
+  border:0;
+  border-left:1px solid #e1e8f3;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+
+.table-filter-date-controls input:focus{
+  border-color:#e1e8f3;
+  box-shadow:none;
+}
+
+.table-filter-field{
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  gap:5px;
+  color:#5d6f92;
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.theme-select{
+  position:relative;
+  min-width:0;
+}
+
+.theme-select-trigger{
+  width:100%;
+  height:30px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+  border:1px solid #d7e0ef;
+  border-radius:7px;
+  background:linear-gradient(180deg,#fff,#f8fbff);
+  color:#233b68;
+  padding:0 9px;
+  font:600 10px 'DM Sans';
+  cursor:pointer;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+
+.theme-select-trigger:hover,
+.theme-select-trigger.open{
+  border-color:#4b75ef;
+  background:#f4f7ff;
+  box-shadow:0 0 0 3px rgba(49,92,239,.09);
+}
+
+.theme-select-trigger span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.theme-select-trigger svg{
+  flex:none;
+  color:#6f82a6;
+  transition:transform .2s;
+}
+
+.theme-select-trigger.open svg{
+  transform:rotate(180deg);
+  color:#315cef;
+}
+
+.theme-select-menu{
+  position:absolute;
+  top:calc(100% + 6px);
+  right:0;
+  left:0;
+  z-index:90;
+  display:flex;
+  max-height:220px;
+  flex-direction:column;
+  gap:3px;
+  overflow:auto;
+  padding:6px;
+  border:1px solid #d5e1f3;
+  border-radius:9px;
+  background:#fff;
+  box-shadow:0 14px 30px rgba(31,54,91,.18);
+}
+
+.theme-select-option{
+  width:100%;
+  min-height:29px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  color:#30466e;
+  padding:0 8px;
+  text-align:left;
+  font:600 10px 'DM Sans';
+  cursor:pointer;
+}
+
+.theme-select-option:hover,
+.theme-select-option:focus-visible{
+  background:#edf3ff;
+  color:#2455db;
+  outline:0;
+}
+
+.theme-select-option.selected{
+  background:#eaf1ff;
+  color:#2455db;
+}
+
+.theme-select-option svg{
+  flex:none;
+}
+
+.table-search{
+  position:relative;
+  width:360px;
+  height:42px;
+  border-color:#cfdcf0;
+  border-radius:9px;
+  background:linear-gradient(180deg,#fff,#f8fbff);
+  box-shadow:0 4px 12px rgba(40,72,128,.06);
+  color:#315cef;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+
+.table-search:focus-within{
+  border-color:#4b75ef;
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(49,92,239,.10),0 7px 16px rgba(40,72,128,.08);
+}
+
+.table-search input{
+  font-size:12px;
+  color:#233b68;
+  padding-right:30px;
+}
+
+.table-search input::placeholder{
+  color:#8796b0;
+}
+.table-search-clear-button{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:6px;background:#eef3fb;color:#6680aa;cursor:pointer;padding:0}
+.table-search-clear-button:hover{background:#dfe9fa;color:#315cef}
+
+.table-filter-clear{
+  width:30px;
+  min-width:30px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  height:30px;
+}
+
+.alloc-status{
+  grid-template-columns:1fr;
+  padding:10px;
+}
+
+.alloc-status .sidebar-logout{
+  grid-column:1;
+  height:32px;
+}
+
+/* Keep Logout as a single clean control; the surrounding status card is no
+   longer visually boxed. The filled blue state makes the click/keyboard
+   interaction consistent with the active navigation treatment. */
+.alloc-status{
+  border:0!important;
+  background:transparent!important;
+  padding:0!important;
+}
+
+.alloc-status .sidebar-logout{
+  width:100%;
+  min-height:40px;
+  height:40px;
+  border:1px solid #e13a52;
+  border-radius:9px;
+  background:linear-gradient(135deg,#ff5a67 0%,#e12f4f 52%,#b91f47 100%);
+  color:#fff;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  cursor:pointer;
+  transition:background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+
+.alloc-status .sidebar-logout:hover,
+.alloc-status .sidebar-logout:focus-visible,
+.alloc-status .sidebar-logout:active{
+  background:linear-gradient(135deg,#ff6b76 0%,#d92549 52%,#a8173d 100%)!important;
+  border-color:#c51f43!important;
+  color:#fff!important;
+  box-shadow:0 7px 16px rgba(209,40,72,.28)!important;
+}
+
+/* The base sidebar theme marks this control with !important values; keep the
+   Matalia/prop-engine Logout treatment authoritative across every page. */
+.alloc-status .sidebar-logout{
+  background:linear-gradient(135deg,#ff5a67 0%,#e12f4f 52%,#b91f47 100%)!important;
+  border:1px solid #e13a52!important;
+  border-radius:9px!important;
+  color:#fff!important;
+  height:40px!important;
+  min-height:40px!important;
+  font-size:12px!important;
+}
+
+/* In collapsed mode Logout becomes a compact, unmistakable icon control. */
+.app-shell.sidebar-collapsed .alloc-status{
+  display:grid!important;
+  width:100%;
+  margin-top:auto;
+  padding:0!important;
+}
+
+.app-shell.sidebar-collapsed .alloc-status .sidebar-logout{
+  width:40px!important;
+  min-width:40px!important;
+  height:40px!important;
+  min-height:40px!important;
+  margin:0 auto;
+  padding:0!important;
+  border-radius:10px!important;
+  font-size:0!important;
+}
+
+.app-shell.sidebar-collapsed .alloc-status .sidebar-logout svg{
+  width:17px;
+  height:17px;
+  margin:0;
+}
+
+/* Compact statistic cards: approximately 70% of the previous height. */
+.alloc-stat{
+  min-height:72px;
+  padding:12px 14px;
+  gap:10px;
+}
+
+.alloc-stat .stat-icon{
+  width:32px;
+  height:32px;
+  border-radius:8px;
+}
+
+.alloc-stat strong{
+  font-size:19px;
 }
 
 .workspace-shell .workflow-hero.reference-stepper .stepper-step.final-step .stepper-top{
@@ -458,7 +946,18 @@
 
 .inst-summary-card{
   padding:14px 12px 12px;
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
+
+.inst-summary-icon{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;border-radius:50%}
+.inst-summary-icon.blue{background:#e8f1ff;color:#2470df}
+.inst-summary-icon.green{background:#e5faef;color:#11aa6a}
+.inst-summary-icon.red{background:#ffebef;color:#d93055}
+.inst-summary-icon.purple{background:#f0eaff;color:#7553e8}
+.inst-summary-icon.orange{background:#fff2df;color:#f09a18}
+.inst-summary-copy{min-width:0}
 
 .inst-summary-card span{
   display:block;
@@ -490,7 +989,8 @@
 
 .inst-table{
   width:100%;
-  min-width:1260px;
+  min-width:0;
+  max-width:100%;
   border-collapse:separate;
   border-spacing:0;
   table-layout:fixed;
@@ -520,6 +1020,23 @@
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
+}
+
+.inst-table th,
+.inst-table td{
+  box-sizing:border-box;
+}
+
+.inst-table .inst-strategy-cell{
+  min-width:0;
+}
+
+.inst-table .inst-strategy-value{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
 .inst-table tbody tr:hover{
@@ -573,6 +1090,7 @@
   color:#fff;
   background:#3153eb;
 }
+.inst-action-btn:disabled{opacity:.45;cursor:not-allowed;background:#f7f9fd;color:#8da0c0;border-color:#dbe4f2}
 
 .inst-action-btn:hover,
 .inst-mini-btn:hover,
@@ -786,3 +1304,47 @@
 .merge-trades-head{display:flex;justify-content:space-between;gap:20px;padding:22px;border-bottom:1px solid #e4ebf6}.merge-trades-head h2{margin:0;color:#102b5d;font-size:20px}.merge-trades-head p{margin:7px 0 0;color:#5f7397;font-size:12px}.merge-trades-close{width:32px;height:32px;border:1px solid #d7e1f1;border-radius:8px;background:#fff;color:#142451;display:grid;place-items:center;cursor:pointer}
 .merge-trades-context,.merge-trades-available,.merge-trades-preview{padding:18px 22px}.merge-trades-context h3,.merge-trades-available h3,.merge-trades-preview h3{margin:0;color:#1559ce;font-size:15px}.merge-trades-context-grid,.merge-trades-preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:13px}.merge-trades-context-grid span,.merge-trades-preview-grid span{display:flex;flex-direction:column;gap:4px;color:#7182a1;font-size:10px}.merge-trades-context-grid strong,.merge-trades-preview-grid strong{color:#1b3562;font-size:12px}.merge-trades-available,.merge-trades-preview{border-top:1px solid #e4ebf6}.merge-trades-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.merge-trades-section-head p{margin:5px 0 0;color:#7487a7;font-size:11px}.merge-trades-section-head label{font-size:11px;color:#31517f;display:flex;gap:6px;align-items:center}.merge-trades-list{margin-top:13px;border:1px solid #d8e3f2;border-radius:9px;overflow:hidden}.merge-trades-row{display:grid;grid-template-columns:24px 1.1fr .8fr .7fr .7fr .9fr;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid #e8eef7;font-size:11px;color:#29446e;cursor:pointer}.merge-trades-row:last-child{border-bottom:0}.merge-trades-row input{width:15px;height:15px}.merge-trades-row strong{text-align:right;color:#193a78}.merge-trades-empty{padding:17px;color:#7487a7;font-size:12px;text-align:center}.merge-trades-preview{background:#f8fbff}.merge-trades-validation{margin:13px 0 0;color:#c05a4e;font-size:11px}.merge-trades-error{margin:0 22px 16px;padding:9px 11px;border-radius:7px;background:#fff1f0;color:#b33e36;font-size:11px}.merge-trades-footer{display:flex;justify-content:flex-end;gap:9px;padding:17px 22px;border-top:1px solid #e4ebf6}.merge-trades-cancel,.merge-trades-save{height:36px;padding:0 16px;border-radius:7px;font:600 11px inherit;cursor:pointer}.merge-trades-cancel{border:1px solid #d5e1f2;background:#fff;color:#3153eb}.merge-trades-save{border:1px solid #3153eb;background:#3153eb;color:#fff}.merge-trades-save:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:700px){.merge-trades-context-grid,.merge-trades-preview-grid{grid-template-columns:repeat(2,1fr)}.merge-trades-row{grid-template-columns:24px 1fr 1fr .7fr .7fr}.merge-trades-row span:nth-of-type(3){display:none}}
+
+/* Strategy Allocation badges: keep the reference palette on the label and icon.
+   This must come after the table's generic black-text rule. */
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.violet,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.violet span,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.violet svg,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.violet svg *{color:#6941c6!important;stroke:#6941c6!important;fill:none!important}
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.pink,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.pink span,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.pink svg,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.pink svg *{color:#dc4778!important;stroke:#dc4778!important;fill:none!important}
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.orange,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.orange span,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.orange svg,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.orange svg *{color:#d97706!important;stroke:#d97706!important;fill:none!important}
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.yellow,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.yellow span,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.yellow svg,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.yellow svg *{color:#c99500!important;stroke:#c99500!important;fill:none!important}
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.green,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.green span,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.green svg,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.green svg *{color:#16a05d!important;stroke:#16a05d!important;fill:none!important}
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.cyan,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.cyan span,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.cyan svg,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.cyan svg *{color:#1597a8!important;stroke:#1597a8!important;fill:none!important}
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.blue,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.blue span,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.blue svg,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.blue svg *{color:#3d73db!important;stroke:#3d73db!important;fill:none!important}
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.purple,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.purple span,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.purple svg,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.purple svg *{color:#8054d6!important;stroke:#8054d6!important;fill:none!important}
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.magenta,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.magenta span,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.magenta svg,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.magenta svg *{color:#c344bd!important;stroke:#c344bd!important;fill:none!important}
+.strategy-color-badge.neutral{--strategy-color:#5f7393;background:#f4f7fb;border-color:#d6e0ef;color:#5f7393!important}
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.neutral,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.neutral span,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.neutral svg,
+.alloc-main .alloc-table td button.strategy-cell-button.strategy-color-badge.neutral svg *{color:#5f7393!important;stroke:#5f7393!important;fill:none!important}

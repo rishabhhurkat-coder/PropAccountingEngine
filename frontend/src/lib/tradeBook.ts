@@ -17,10 +17,19 @@ export type TradeBookRecord = {
   cmp: number | null;
   mtm: number;
   strategy: string;
+  mainStrategy?: string;
   status: TradeStatus;
+  entryDate?: string;
+  entryTime?: string;
+  entryPrice?: number;
+  exitDate?: string;
+  exitTime?: string;
+  exitPrice?: number;
 };
 
-export const tradeBookTabs: TradeBookTab[] = ['All Trades', 'Open Trades', 'Closed Trades'];
+// The combined All Trades view is intentionally not exposed here. It is a
+// large, slow dataset and is not needed for the Trade Book workflow.
+export const tradeBookTabs: TradeBookTab[] = ['Open Trades', 'Closed Trades'];
 
 export const tradeBookTabViewMap: Record<TradeBookTab, 'all' | 'open' | 'closed'> = {
   'All Trades': 'all',

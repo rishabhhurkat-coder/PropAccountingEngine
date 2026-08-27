@@ -1,0 +1,16 @@
+duckdb
+fastapi
+python-multipart
+openpyxl
+pandas
+lxml
+html5lib
+beautifulsoup4
+psycopg[binary]
+psycopg-pool==3.2.4
+pyperclip
+uvicorn
+kiteconnect
+google-cloud-storage
+python-dotenv
+playwright

@@ -16,20 +16,20 @@ From the repository root:
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 py -m pip install --upgrade pip
-py -m pip install -r Credentials\requirements.txt
+py -m pip install -r backend\requirements.txt
 py -m playwright install
 ```
 
 If PowerShell blocks activation, use the Python executable directly:
 
 ```powershell
-.venv\Scripts\python.exe -m pip install -r Credentials\requirements.txt
+.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
 ```
 
 ## Environment configuration
 
 ```powershell
-Copy-Item Credentials\.env.example Credentials\.env
+Copy-Item backend\.env.example backend\.env
 ```
 
 Required values depend on the feature being used. The main groups are:
@@ -67,7 +67,7 @@ npm run build
 
 `backend/start_matalia.ps1` is the desktop-oriented launcher. It creates the runtime directory, presents a branded progress window, and coordinates the local environment. It expects the repository layout to remain intact.
 
-`Matalia.vbs` is a convenience entry point for launching the PowerShell experience without opening a visible console first.
+The backend launcher is a convenience entry point for launching the PowerShell experience without opening a visible console first.
 
 ## Operating sequence
 
@@ -86,7 +86,7 @@ npm run build
 
 ### Backend cannot connect
 
-Confirm `Credentials/.env`, PostgreSQL reachability, SSL mode, and that the selected Python environment contains the dependencies.
+Confirm `backend/.env`, PostgreSQL reachability, SSL mode, and that the selected Python environment contains the dependencies.
 
 ### Frontend shows network errors
 

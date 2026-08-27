@@ -18,9 +18,10 @@ from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(PROJECT_ROOT / "Credentials" / ".env")
+load_dotenv(PROJECT_ROOT / "backend" / ".env")
 TXT_ROOT = PROJECT_ROOT / "Input" / "Txt"
 STAGED_TXT_PATH = PROJECT_ROOT / "Other Logs" / "Runtime" / "selected_txt_import.txt"
+STAGED_TXT_DIR = PROJECT_ROOT / "Other Logs" / "Runtime" / "selected_txt_import"
 DATE_PATTERN = re.compile(r"\b(\d{2}/\d{2}/\d{4})\b")
 TARGET_SCHEMA = "matalia"
 TARGET_TABLE = '"01RawTxtData"'
@@ -46,9 +47,11 @@ connect = _load_connection_module().connect
 
 
 def get_txt_files() -> list[Path]:
-    # The UI stages a copy of the file selected by the user.  Reading this
-    # copy keeps the user's original local TXT untouched.
-    return [STAGED_TXT_PATH] if STAGED_TXT_PATH.is_file() else []
+    # The UI stages copies of the selected files. Reading these copies keeps
+    # the user's originals untouched and allows one pipeline run to process
+    # multiple broker exports.
+    staged = sorted(STAGED_TXT_DIR.glob("*.txt")) if STAGED_TXT_DIR.is_dir() else []
+    return staged or ([STAGED_TXT_PATH] if STAGED_TXT_PATH.is_file() else [])
 
 
 def extract_trade_date(text: str) -> datetime | None:
@@ -92,20 +95,32 @@ def _instrument_id(trade: dict[str, Any]) -> str:
     return f"{trade['scrip']}{trade['option_type']}{trade['strike']}{trade['expiry']}"
 
 
-def collect_rows(files: list[Path]) -> tuple[list[dict[str, Any]], int]:
+def collect_rows(files: list[Path]) -> tuple[list[dict[str, Any]], int, list[dict[str, Any]]]:
     grouped: dict[tuple[Any, ...], dict[str, Any]] = defaultdict(dict)
     processed = 0
+    file_results: list[dict[str, Any]] = []
     for source_file in files:
         text = source_file.read_text(encoding="utf-8", errors="ignore")
         trade_date = extract_trade_date(text)
         if trade_date is None:
-            print(f"Skipping {source_file.name}: no trade date found")
+            result = {"name": source_file.name, "date": "", "records": 0, "status": "failed", "reason": "No trade date found in the file."}
+            file_results.append(result)
+            print("IMPORT_FILE|" + "|".join(f"{key}={value}" for key, value in result.items()))
             continue
+        file_processed = 0
+        invalid_lines = 0
         for line in source_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+            if not line.strip():
+                continue
             trade = parse_trade_line(line)
             if trade is None:
+                invalid_lines += 1
                 continue
-            minute = _trade_minute(trade["trade_time"])
+            try:
+                minute = _trade_minute(trade["trade_time"])
+            except (TypeError, ValueError):
+                invalid_lines += 1
+                continue
             key = (
                 trade["trade_date"], minute, _instrument_id(trade),
                 trade["trade_type"], trade["account"],
@@ -130,6 +145,17 @@ def collect_rows(files: list[Path]) -> tuple[list[dict[str, Any]], int]:
             row["weighted_value"] += trade["price"] * trade["quantity"]
             row["trades_merged"] += 1
             processed += 1
+            file_processed += 1
+
+        result = {
+            "name": source_file.name,
+            "date": trade_date.strftime("%d-%b-%Y"),
+            "records": file_processed,
+            "status": "success" if file_processed else "failed",
+            "reason": f"No valid trade rows found ({invalid_lines} invalid row(s))." if not file_processed else (f"Skipped {invalid_lines} invalid row(s)." if invalid_lines else ""),
+        }
+        file_results.append(result)
+        print("IMPORT_FILE|" + "|".join(f"{key}={value}" for key, value in result.items()))
 
     rows = []
     for row in grouped.values():
@@ -139,7 +165,7 @@ def collect_rows(files: list[Path]) -> tuple[list[dict[str, Any]], int]:
         row["average_price"] = round(weighted_value / quantity, 4) if quantity else 0
         rows.append(row)
     rows.sort(key=lambda row: (row["trade_date"], row["trade_minute"], row["instrument_id"]))
-    return rows, processed
+    return rows, processed, file_results
 
 
 def ensure_target_table(conn: Any) -> None:
@@ -195,7 +221,11 @@ def main() -> None:
         print("No TXT files found.")
         return
     print(f"Found {len(files)} TXT file(s). Parsing and upserting directly to Supabase...")
-    rows, processed = collect_rows(files)
+    rows, processed, file_results = collect_rows(files)
+    failed_files = [result for result in file_results if result["status"] == "failed"]
+    if failed_files:
+        print(f"Import failed for {len(failed_files)} file(s). No rows were written.")
+        raise SystemExit(2)
     upserted = upsert_rows(rows)
     print(f"Parsed trades: {processed:,}")
     print(f"Supabase rows upserted: {upserted:,}")

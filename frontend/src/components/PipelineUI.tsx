@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, BarChart3, Check, CheckCircle2, ChevronDown, CircleHelp, Database, FileChartColumn, FileText, History, MoreHorizontal, ReceiptIndianRupee, RotateCcw, Settings, ShieldCheck, SlidersHorizontal, Star, Table2, Trash2, Upload, UserRound, Users, WalletCards, Zap } from 'lucide-react';
+import { Activity, AlertCircle, BarChart3, Check, CheckCircle2, ChevronDown, CircleHelp, Database, FileChartColumn, History, Loader2, MoreHorizontal, ReceiptIndianRupee, RotateCcw, Settings, ShieldCheck, SlidersHorizontal, Star, Table2, Trash2, Upload, UserRound, Users, WalletCards, Zap, LogOut } from 'lucide-react';
 import { NavLink } from '../lib/router';
 import { ImportedFile, Stage } from '../types';
-import hlLogo from '../assets/hl-logo.png';
+import { signOut } from '../lib/auth';
+import hlLogo from '../assets/hnl-brand-lockup-hd.png';
 
 export function SectionHeader({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) {
   return <div className="section-header"><div>{eyebrow && <div className="section-eyebrow">{eyebrow}</div>}<h2>{title}</h2>{description && <p>{description}</p>}</div>{action}</div>;
@@ -26,10 +27,7 @@ const pipelineLinks = [
   ['Strategy Allocation', BarChart3, '/strategy-allocation'],
   ['Trade Book', ShieldCheck, '/trade-book'],
   ['Positions', CircleHelp, '/positions'],
-] as const;
-
-const hiddenPipelineLinks = [
-  ['Raw Trade Import', FileText, '/raw-trade-import'],
+  ['Actual Positions', WalletCards, '/actual-positions'],
 ] as const;
 
 const sidebarGroups = [
@@ -40,28 +38,21 @@ const sidebarGroups = [
 export function PipelineSidebar({
   collapsed = false,
   onToggle,
+  canManageUsers = false,
 }: {
   collapsed?: boolean;
   onToggle?: () => void;
+  canManageUsers?: boolean;
 }) {
   return (
     <aside className="alloc-sidebar">
-      <div className="alloc-hl-brand" aria-label="H&L Software">
+      <button className="alloc-hl-brand alloc-hl-brand-toggle" type="button" onClick={onToggle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
         <img className="alloc-hl-logo" src={hlLogo} alt="H&L Software" />
-      </div>
-      <div className="alloc-brand">
-        <button className="alloc-brand-mark alloc-brand-toggle" type="button" onClick={onToggle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-          M
-        </button>
-        <div className="alloc-brand-copy">
-          <strong>Matalia SL</strong>
-          <small>Trade Accounting OS</small>
-        </div>
-      </div>
+      </button>
       <div className="alloc-nav-section">
         <div className="alloc-nav-label">PIPELINE</div>
         {pipelineLinks.map(([label, Icon, to]) => (
-          <NavLink key={label} to={to} end className={({ isActive }) => `alloc-nav-item ${isActive ? 'active' : ''}`}>
+          <NavLink key={label} to={to} end aria-label={label} data-tooltip={label} className={({ isActive }) => `alloc-nav-item ${isActive ? 'active' : ''}`}>
             <span className="alloc-nav-icon">
               <Icon size={16} />
             </span>
@@ -73,11 +64,11 @@ export function PipelineSidebar({
         <div className="alloc-nav-section" key={title}>
           <div className="alloc-nav-label">{title}</div>
           {items.map(([label, Icon, to]) => to ? (
-            <NavLink key={label} to={to} end className={({ isActive }) => `alloc-nav-item ${isActive ? 'active' : ''}`}>
+            <NavLink key={label} to={to} end aria-label={label} data-tooltip={label} className={({ isActive }) => `alloc-nav-item ${isActive ? 'active' : ''}`}>
               <span className="alloc-nav-icon"><Icon size={16} /></span><span className="alloc-nav-text">{label}</span>
             </NavLink>
           ) : (
-            <button key={label} className="alloc-nav-item" type="button">
+            <button key={label} className="alloc-nav-item" type="button" aria-label={label} data-tooltip={label}>
               <span className="alloc-nav-icon">
                 <Icon size={16} />
               </span>
@@ -86,31 +77,72 @@ export function PipelineSidebar({
           ))}
         </div>
       ))}
-      <div className="alloc-nav-section">
-        <div className="alloc-nav-label">HIDDEN</div>
-        {hiddenPipelineLinks.map(([label, Icon, to]) => (
-          <NavLink key={label} to={to} end className={({ isActive }) => `alloc-nav-item ${isActive ? 'active' : ''}`}>
-            <span className="alloc-nav-icon"><Icon size={16} /></span>
-            <span className="alloc-nav-text">{label}</span>
-          </NavLink>
-        ))}
-      </div>
+      {canManageUsers && <div className="alloc-nav-section prop-user-management-nav">
+        <div className="alloc-nav-label">ADMIN</div>
+        <NavLink to="/user-management" end aria-label="User management" data-tooltip="User management" className={({ isActive }) => `alloc-nav-item ${isActive ? 'active' : ''}`}>
+          <span className="alloc-nav-icon"><Users size={16} /></span><span className="alloc-nav-text">User management</span>
+        </NavLink>
+      </div>}
       <div className="alloc-status">
-        <div className="status-dot">●</div>
-        <strong>System Status</strong>
-        <span>All systems operational</span>
-        <span>Last sync: 09:45:31 AM</span>
-        <hr />
-        <button type="button">View Logs</button>
+        <button type="button" className="sidebar-logout" onClick={() => void signOut()} aria-label="Logout" data-tooltip="Logout"><LogOut size={13} /> Logout</button>
       </div>
     </aside>
   );
 }
 
-export function WorkflowTimeline({ stage, actions, onSelectFile }: { stage: Stage; actions?: ReactNode; onSelectFile?: () => void }) {
+export function pipelineTimelineStage(rawStage: string | null | undefined, running = false): Stage {
+  if (rawStage === 'error') return 'error';
+  if (rawStage === 'ready') return 'ready';
+  if (rawStage === 'files') return 'files';
+  if (rawStage === '02_Convert_DB.py') return 'table';
+  if (rawStage === '03_Raw_Trades.py') return 'table';
+  if (rawStage === '04_Validation.py') return 'validate';
+  if (rawStage?.startsWith('01_') || running) return 'convert';
+  return 'idle';
+}
+
+export function WorkflowTimeline({
+  stage,
+  actions,
+  onSelectFile,
+  message,
+  status,
+}: {
+  stage: Stage;
+  actions?: ReactNode;
+  onSelectFile?: () => void;
+  message?: string;
+  status?: 'idle' | 'files' | 'running' | 'success' | 'error';
+}) {
   const items = [{ label: 'Import Files', icon: Upload }, { label: 'Convert Database', icon: Database }, { label: 'Build Raw Trades', icon: Table2 }, { label: 'Validation', icon: ShieldCheck }, { label: 'Ready', icon: CheckCircle2 }];
-  const currentIndex = stage === 'files' ? 0 : stage === 'convert' ? 1 : stage === 'table' ? 2 : stage === 'ready' ? items.length : 4;
-  return <div className="workflow-hero reference-stepper"><div className="workflow-card-head">{actions}</div><div className="workflow-stepper">{items.map((item, index) => { const complete = index < currentIndex; const current = index === currentIndex; const Icon = item.icon; return <div className="stepper-segment" key={item.label}><div className={`stepper-step ${complete ? 'complete' : current ? 'current' : 'pending'} ${index === items.length - 1 ? 'final-step' : ''}`}><div className="stepper-top"><div className="stepper-icon">{index === 0 && onSelectFile ? <button type="button" className="stepper-file-picker" onClick={onSelectFile} aria-label="Select TXT file" title="Select TXT file"><Icon size={20} /></button> : <Icon size={20} />}</div><div className="stepper-text"><strong><span>{index + 1}</span> {item.label}</strong></div></div>{complete && <div className="stepper-check"><Check size={11} /></div>}{current && index < items.length - 1 && <div className="stepper-active-line" />}</div>{index < items.length - 1 && <div className={`stepper-connector ${complete ? 'complete' : ''}`} />}</div>; })}</div></div>;
+  const currentIndex = stage === 'idle' || stage === 'files' ? 0 : stage === 'convert' ? 1 : stage === 'table' ? 2 : stage === 'validate' ? 3 : stage === 'ready' ? items.length : 0;
+  const resolvedStatus = status ?? (stage === 'error' ? 'error' : stage === 'ready' ? 'success' : stage === 'files' ? 'files' : stage === 'idle' ? 'idle' : 'running');
+  const resolvedMessage = message ?? (resolvedStatus === 'idle' ? 'No pipeline run yet. Select one or more TXT files to begin.' : resolvedStatus === 'files' ? 'TXT files uploaded and ready to run.' : resolvedStatus === 'success' ? 'Pipeline completed successfully. Supabase data is updated.' : resolvedStatus === 'error' ? 'Pipeline failed. Review the process log for the exact reason.' : 'Pipeline is running. The screen will update as each step completes.');
+  return <div className="workflow-hero reference-stepper">
+    <div className="workflow-card-head">{actions}</div>
+    <div className="workflow-stepper">{items.map((item, index) => {
+      const complete = stage === 'ready' ? index < items.length : index < currentIndex;
+      const current = !complete && (stage === 'error' ? index === currentIndex : index === currentIndex);
+      const Icon = item.icon;
+      return <div className="stepper-segment" key={item.label}>
+        <div className={`stepper-step ${complete ? 'complete' : current ? (stage === 'error' ? 'error' : 'current') : 'pending'} ${index === items.length - 1 ? 'final-step' : ''}`}>
+          <div className="stepper-top">
+            <div className="stepper-icon">{index === 0 && onSelectFile ? <button type="button" className="stepper-file-picker" onClick={onSelectFile} aria-label="Select TXT file" title="Select TXT file"><Icon size={20} /></button> : current && stage === 'error' ? <AlertCircle size={20} /> : current && resolvedStatus === 'running' ? <Loader2 className="spin" size={20} /> : <Icon size={20} />}</div>
+            <div className="stepper-text"><strong><span>{index + 1}</span> {item.label}</strong></div>
+          </div>
+          {complete && <div className="stepper-check"><Check size={11} /></div>}
+          {current && index < items.length - 1 && <div className="stepper-active-line" />}
+        </div>
+        {index < items.length - 1 && <div className={`stepper-connector ${complete ? 'complete' : ''}`} />}
+      </div>;
+    })}</div>
+    <div className={`workflow-state workflow-state--${resolvedStatus}`} role={resolvedStatus === 'error' ? 'alert' : 'status'}>
+      {resolvedStatus === 'running' && <Loader2 className="spin" size={14} />}
+      {resolvedStatus === 'success' && <CheckCircle2 size={14} />}
+      {resolvedStatus === 'error' && <AlertCircle size={14} />}
+      <span>{resolvedMessage}</span>
+    </div>
+  </div>;
 }
 
 export function MetricCard({ label, value, note, tone = 'neutral', icon }: { label: string; value: string | number; note?: string; tone?: 'neutral' | 'blue' | 'green' | 'rose' | 'violet'; icon?: ReactNode }) { return <motion.div className={`metric-card ${tone}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .35 }}><div className="metric-top"><span>{label}</span>{icon && <span className="metric-icon">{icon}</span>}</div><strong>{value}</strong>{note && <small>{note}</small>}</motion.div>; }

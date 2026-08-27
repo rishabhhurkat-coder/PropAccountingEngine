@@ -8,17 +8,7 @@ This document explains the repository folder by folder and file by file. Generat
 | --- | --- |
 | `README.md` | Product overview, quick start, repository map, security summary, and documentation index. |
 | `.gitignore` | Excludes credentials, decrypted outputs, logs, browser data, dependencies, build output, caches, and local data. |
-| `Matalia.vbs` | Windows convenience launcher for the Matalia desktop workflow. |
-
-## `Credentials/`
-
-| File | Responsibility |
-| --- | --- |
-| `.env.example` | Blank configuration template documenting Supabase, GCS, Zerodha, and Jobber variables. |
-| `.env.enc` | Encrypted credential backup. The application does not load this file automatically. |
-| `requirements.txt` | Python dependencies for the backend, integrations, parsing, browser automation, and data processing. |
-
-The plaintext `.env` is local-only and deliberately absent from the repository.
+| `Dockerfile` | Dedicated Prop backend container and start command. |
 
 ## `backend/`
 
@@ -38,6 +28,8 @@ The plaintext `.env` is local-only and deliberately absent from the repository.
 | `10_LivePositions.py` | Exposes live-price and open-position endpoints and coordinates CMP updates. |
 | `main.py` | FastAPI application entry point, route registration, pipeline orchestration, trade-book endpoints, allocation endpoints, and response shaping. |
 | `start_matalia.ps1` | Windows desktop launcher with branded progress UI and local service startup logic. |
+| `requirements.txt` | Prop backend dependencies for integrations, parsing, browser automation, and data processing. |
+| `.env.example` | Blank configuration template documenting Supabase, GCS, Zerodha, and Jobber variables. |
 
 ### Backend naming convention
 

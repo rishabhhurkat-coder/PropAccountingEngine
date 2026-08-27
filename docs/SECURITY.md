@@ -4,10 +4,10 @@
 
 | File | Handling |
 | --- | --- |
-| `Credentials/.env` | Local plaintext runtime configuration. Never commit or share. |
-| `Credentials/.env.enc` | Encrypted backup artifact. Safe to store privately when the password is managed separately. |
-| `Credentials/.env.example` | Blank configuration template. Safe to commit. |
-| `Credentials/.env.decrypted` | Temporary plaintext output. Delete after use. |
+| `backend/.env` | Local plaintext runtime configuration. Never commit or share. |
+| `backend/.env.enc` | Encrypted backup artifact. Safe to store privately when the password is managed separately. |
+| `backend/.env.example` | Blank configuration template. Safe to commit. |
+| `backend/.env.decrypted` | Temporary plaintext output. Delete after use. |
 | `Other Logs/` | Local runtime data and browser artefacts. Ignored from Git. |
 
 ## Encryption format
@@ -26,7 +26,7 @@ The encryption password is not stored in the repository or inside the encrypted 
 1. Ensure the current local plaintext `.env` or `.env.decrypted` is available.
 2. Encrypt it with a new password and a new random salt.
 3. Verify decryption with the new password.
-4. Replace `Credentials/.env.enc`.
+4. Replace `backend/.env.enc`.
 5. Commit only the encrypted file.
 6. Delete temporary plaintext output when finished.
 
@@ -43,7 +43,7 @@ If credentials are exposed:
 ## Publishing checklist
 
 - `git status` reviewed.
-- `Credentials/.env` is ignored.
+- `backend/.env` is ignored.
 - No private key, token, password, or service-account JSON appears in staged files.
 - Runtime logs, browser profiles, generated data, and caches are excluded.
 - Repository visibility is confirmed as private.

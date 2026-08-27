@@ -58,8 +58,6 @@ def _strategy_stats(rows: list[dict[str, Any]], name: str) -> dict[str, Any]:
         'avgLoss': _money(sum(losses) / len(losses) if losses else 0),
         'maxDrawdown': _drawdown([float(row.get('pnl_amount') or 0) for row in sorted(rows, key=lambda item: (item.get('exit_date') or date.min, str(item.get('exit_time') or '')))]),
     }
-
-
 def build_dashboard(conn: Any, from_date: date | None = None, to_date: date | None = None, instrument: str = 'All Instruments', strategy: str = 'All Strategies') -> dict[str, Any]:
     filters = []
     params: list[Any] = []
@@ -143,5 +141,3 @@ def build_dashboard(conn: Any, from_date: date | None = None, to_date: date | No
         'timeOfDay': [{'time': key, 'value': _money(time_values[key])} for key in time_order],
         'winningLosing': {'profitablePct': _pct(profitable_strategies / len(stats) * 100 if stats else 0), 'profitableCount': profitable_strategies, 'profitableTotalPct': _pct(profitable_strategies / len(stats) * 100 if stats else 0), 'losingCount': len(stats) - profitable_strategies, 'losingTotalPct': _pct((len(stats) - profitable_strategies) / len(stats) * 100 if stats else 0)},
     }
-
-

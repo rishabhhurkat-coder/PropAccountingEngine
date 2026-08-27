@@ -57,7 +57,7 @@ def load_trades(conn) -> pd.DataFrame:
     Load all processed trades from Supabase.
     """
 
-    
+
     sql = f"""
         SELECT
             id,
@@ -514,9 +514,9 @@ def bypass_merge():
 # ==========================================================
 
 def main():
-     
+
     with connect() as conn:
-       
+
         conn.execute(f"""
             ALTER TABLE {TABLE_NAME}
             ADD COLUMN IF NOT EXISTS merge_trade_id BIGINT NULL;

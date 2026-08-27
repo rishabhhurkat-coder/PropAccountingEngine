@@ -416,6 +416,12 @@
   background: #ecfbf3;
 }
 
+.workspace-shell .pipeline-log-status.error {
+  color: #b33f48;
+  border: 1px solid #f0c5c9;
+  background: #fff3f3;
+}
+
 .workspace-shell .pipeline-log-meta {
   display: flex;
   align-items: center;

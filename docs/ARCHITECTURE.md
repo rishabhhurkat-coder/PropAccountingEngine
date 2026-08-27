@@ -35,7 +35,7 @@ flowchart LR
 ### Backend
 
 - Starts at `backend.main:app`.
-- Loads `Credentials/.env` through `python-dotenv`.
+- Loads `backend/.env` through `python-dotenv`.
 - Dynamically imports numbered workflow modules because their filenames begin with digits.
 - Restricts CORS to local development origins.
 - Writes pipeline activity to the ignored runtime-log directory.

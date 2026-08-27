@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { TradeBookFilters } from '../components/TradeBookFilters';
+import { CheckSquare, Download, Trash2 } from 'lucide-react';
+import { TradeBookFilterControls, TradeBookFilterPanel, TradeBookFilterValues } from '../components/TradeBookFilters';
 import { TradeBookHeader } from '../components/TradeBookHeader';
 import { TradeBookPagination } from '../components/TradeBookPagination';
 import { TradeBookTable, TradeSortKey } from '../components/TradeBookTable';
@@ -7,21 +8,15 @@ import { TradeBookTabs } from '../components/TradeBookTabs';
 import { deleteTradeBookTrade, loadTradeBook, updateOpenTradeCmps } from '../lib/api';
 import { TradeBookRecord, TradeBookTab } from '../lib/tradeBook';
 
-type FilterState = {
-  date: string;
-  expiry: string;
-  scrip: string;
-  strategy: string;
-  tradeType: string;
-  search: string;
-};
+type FilterState = TradeBookFilterValues;
 
 const DEFAULT_FILTERS: FilterState = {
-  date: 'Loading trade date...',
+  date: '',
   expiry: 'All Expiry',
   scrip: 'All Scrips',
   strategy: 'All Strategies',
   tradeType: 'All',
+  optionType: '',
   search: '',
 };
 
@@ -55,15 +50,17 @@ function matchesFilters(row: TradeBookRecord, activeTab: TradeBookTab, filters: 
     (activeTab === 'Open Trades' && row.status.toUpperCase() === 'OPEN') ||
     (activeTab === 'Closed Trades' && row.status.toUpperCase() === 'CLOSED');
   const query = normalizeText(filters.search);
-  const tradeType = filters.tradeType.toLowerCase();
+  const tradeType = normalizeText(filters.tradeType);
+  const same = (left: unknown, right: unknown) => normalizeText(left) === normalizeText(right);
 
   return (
     tabMatch &&
-    (filters.date === 'Loading trade date...' || row.date === filters.date) &&
-    (filters.expiry === 'All Expiry' || row.expiry === filters.expiry) &&
-    (filters.scrip === 'All Scrips' || row.scrip === filters.scrip) &&
-    (filters.strategy === 'All Strategies' || row.strategy === filters.strategy) &&
-    (tradeType === 'all' || row.side.toLowerCase() === tradeType) &&
+    (!filters.date || same(row.date, filters.date)) &&
+    (filters.expiry === 'All Expiry' || same(row.expiry, filters.expiry)) &&
+    (filters.scrip === 'All Scrips' || same(row.scrip, filters.scrip)) &&
+    (filters.strategy === 'All Strategies' || same(row.strategy, filters.strategy)) &&
+    (tradeType === 'all' || same(row.side, filters.tradeType)) &&
+    (!filters.optionType || same(row.optType, filters.optionType)) &&
     (!query ||
       [
         row.date,
@@ -86,7 +83,7 @@ function matchesFilters(row: TradeBookRecord, activeTab: TradeBookTab, filters: 
 }
 
 export function TradeBook() {
-  const [activeTab, setActiveTab] = useState<TradeBookTab>('All Trades');
+  const [activeTab, setActiveTab] = useState<TradeBookTab>('Open Trades');
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [rows, setRows] = useState<TradeBookRecord[]>([]);
   const [loadedView, setLoadedView] = useState<TradeBookTab | null>(null);
@@ -95,19 +92,24 @@ export function TradeBook() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedTradeIds, setSelectedTradeIds] = useState<Set<string>>(new Set());
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [deleteConfirmTrade, setDeleteConfirmTrade] = useState<string | null>(null);
+  const [deletingTrade, setDeletingTrade] = useState(false);
   const [savingCmp, setSavingCmp] = useState(false);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'checking' | 'verified' | 'mismatch' | 'idle'>('checking');
+  const [syncCheckedAt, setSyncCheckedAt] = useState('');
   useEffect(() => {
     let cancelled = false;
 
-    setStatusMessage('Loading live trade book data from Supabase...');
+    setSyncStatus('checking');
+    setSyncCheckedAt('');
     setLoadError('');
-    setLoadedView(null);
-    setRows([]);
 
     loadTradeBook(activeTab)
       .then((response) => {
@@ -115,11 +117,9 @@ export function TradeBook() {
         setRows(response.rows);
         setLoadedView(response.view);
         setCounts(response.counts);
-        setFilters((current) => ({
-          ...current,
-          date: response.rows[0]?.date ?? current.date,
-        }));
-        setStatusMessage('');
+        const countsMatch = response.verification?.counts_match ?? response.rows.length === response.counts[response.view];
+        setSyncStatus(countsMatch ? 'verified' : 'mismatch');
+        setSyncCheckedAt(response.verification?.checked_at ?? new Date().toISOString());
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -128,7 +128,7 @@ export function TradeBook() {
         setLoadedView(null);
         setCounts(DEFAULT_COUNTS);
         setLoadError(message);
-        setStatusMessage('');
+        setSyncStatus('idle');
       });
 
     return () => {
@@ -137,12 +137,15 @@ export function TradeBook() {
   }, [activeTab, refreshNonce]);
 
   const filterOptions = useMemo(() => {
+    const rowsForFilter = (field: keyof FilterState) => rows.filter((row) => matchesFilters(row, activeTab, { ...filters, [field]: DEFAULT_FILTERS[field] }));
     return {
-      expiries: uniqueOptions(rows, (row) => row.expiry, 'All Expiry'),
-      scrips: uniqueOptions(rows, (row) => row.scrip, 'All Scrips'),
-      strategies: uniqueOptions(rows, (row) => row.strategy, 'All Strategies'),
+      dates: uniqueOptions(rowsForFilter('date'), (row) => row.date, 'All Dates'),
+      expiries: uniqueOptions(rowsForFilter('expiry'), (row) => row.expiry, 'All Expiry'),
+      scrips: uniqueOptions(rowsForFilter('scrip'), (row) => row.scrip, 'All Scrips'),
+      strategies: uniqueOptions(rowsForFilter('strategy'), (row) => row.strategy, 'All Strategies'),
+      optionTypes: uniqueOptions(rowsForFilter('optionType'), (row) => row.optType, 'All Options'),
     };
-  }, [rows]);
+  }, [activeTab, filters, rows]);
 
   const matchingRows = useMemo(() => {
     if (loadedView !== activeTab) return [];
@@ -153,12 +156,13 @@ export function TradeBook() {
   }, [activeTab, filters, loadedView, rows, sortDirection, sortKey]);
 
   const virtualTotal =
-    filters.date !== 'Loading trade date...' ||
+    filters.date ||
     filters.search ||
     filters.expiry !== 'All Expiry' ||
     filters.scrip !== 'All Scrips' ||
     filters.strategy !== 'All Strategies' ||
-    filters.tradeType !== 'All'
+    filters.tradeType !== 'All' ||
+    filters.optionType
       ? matchingRows.length
       : counts[activeTab];
 
@@ -171,7 +175,33 @@ export function TradeBook() {
 
   useEffect(() => {
     setOpenMenu(null);
+    setSelectedTradeIds(new Set());
+    setSelectionMode(false);
   }, [activeTab]);
+
+  function toggleSelectionMode() {
+    setSelectionMode((current) => {
+      if (current) setSelectedTradeIds(new Set());
+      return !current;
+    });
+  }
+
+  function toggleTradeSelection(tradeId: string) {
+    setSelectedTradeIds((current) => {
+      const next = new Set(current);
+      if (next.has(tradeId)) next.delete(tradeId);
+      else next.add(tradeId);
+      return next;
+    });
+  }
+
+  function toggleAllTradeSelection(tradeIds: string[], checked: boolean) {
+    setSelectedTradeIds((current) => {
+      const next = new Set(current);
+      tradeIds.forEach((tradeId) => (checked ? next.add(tradeId) : next.delete(tradeId)));
+      return next;
+    });
+  }
 
   function updateFilter(key: keyof FilterState, value: string) {
     setFilters((current) => ({ ...current, [key]: value }));
@@ -211,15 +241,19 @@ export function TradeBook() {
     }
   }
 
-  async function deleteTrade(tradeId: string) {
-    if (!window.confirm(`Delete trade ${tradeId} and all related merge/split records?`)) return;
-
+  async function confirmDeleteTrade() {
+    if (!deleteConfirmTrade || deletingTrade) return;
+    setDeletingTrade(true);
+    setLoadError('');
     try {
-      const response = await deleteTradeBookTrade(tradeId);
+      const response = await deleteTradeBookTrade(deleteConfirmTrade);
       setFeedback(response.message);
       refreshTradeBook();
     } catch (error: unknown) {
       setLoadError(error instanceof Error ? error.message : 'Unable to delete trade');
+    } finally {
+      setDeletingTrade(false);
+      setDeleteConfirmTrade(null);
     }
   }
 
@@ -239,26 +273,25 @@ export function TradeBook() {
     setFeedback('Trade book exported');
   }
 
+  const syncTimeLabel = useMemo(() => {
+    if (!syncCheckedAt) return '—';
+    const parsed = new Date(syncCheckedAt);
+    if (Number.isNaN(parsed.getTime())) return syncCheckedAt;
+    return parsed.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).replace(':', '.').toUpperCase();
+  }, [syncCheckedAt]);
+  // All Trades is no longer loaded or displayed, so there is no combined
+  // dataset to compare against the Open/Closed counts.
+  const expectedAllTradesCount = 0;
+  const countMismatch = false;
+
   return (
     <div className="reference-shell">
       <main className="reference-main">
-        <TradeBookHeader onRefresh={refreshTradeBook} />
-        <TradeBookFilters values={filters} options={filterOptions} onChange={updateFilter} />
-        {statusMessage && (
-          <div className="reference-feedback" role="status">
-            {statusMessage}
-          </div>
-        )}
+        <TradeBookHeader syncStatus={syncStatus} syncTimeLabel={syncTimeLabel} countMismatch={countMismatch} actualAllTrades={counts['All Trades']} expectedAllTrades={expectedAllTradesCount} />
         {loadError && (
-          <div className="reference-feedback" role="alert">
+          <div className="alloc-notice trade-book-error" role="alert">
             {loadError}
             <button onClick={refreshTradeBook}>Retry</button>
-          </div>
-        )}
-        {feedback && (
-          <div className="reference-feedback" role="status">
-            {feedback}
-            <button onClick={() => setFeedback('')}>×</button>
           </div>
         )}
         <section className="reference-trade-card">
@@ -271,23 +304,59 @@ export function TradeBook() {
                 setPage(1);
               }}
             />
-            <div className="reference-table-actions">
-              {activeTab === 'Open Trades' && (
-                <button className="reference-cmp-button" onClick={saveOpenTradeCmps} disabled={savingCmp || loadedView !== activeTab} title="Fetch current CMP and save it to Open Trades">
-                  {savingCmp ? 'Saving CMP…' : 'Fetch & Save CMP'}
+            <div className="trade-book-header-tools">
+              <TradeBookFilterControls values={filters} showFilters={showFilters} activeFilterCount={Object.entries(filters).filter(([key, value]) => key !== 'search' && Boolean(value) && !['All Expiry', 'All Scrips', 'All Strategies', 'All'].includes(value)).length} onToggleFilters={() => setShowFilters((current) => !current)} onChange={updateFilter} />
+              <button type="button" className={`trade-book-selection-toggle${selectionMode ? ' active' : ''}`} onClick={toggleSelectionMode} aria-pressed={selectionMode} aria-label={selectionMode ? 'Hide trade selection' : 'Enable multiple trade selection'} title={selectionMode ? 'Hide trade selection' : 'Select multiple trades'}>
+                <CheckSquare size={15} />
+              </button>
+              <div className="reference-table-actions">
+                {activeTab === 'Open Trades' && (
+                  <button className="reference-cmp-button" onClick={saveOpenTradeCmps} disabled={savingCmp || loadedView !== activeTab} title="Fetch current CMP and save it to Open Trades">
+                    {savingCmp ? 'Saving CMP…' : 'Fetch & Save CMP'}
+                  </button>
+                )}
+                <button className="reference-export-button" onClick={exportRows} aria-label="Export trade book as CSV" title="Export CSV">
+                  <Download size={14} /> <span>CSV</span>
                 </button>
-              )}
-              <button className="reference-export-button" onClick={exportRows}>
-                ↓ &nbsp; Export
-              </button>
-              <button className="reference-add-button" onClick={() => setFeedback('Manual trade entry is ready to be connected')}>
-                ⊕ &nbsp; Add Manual Trade
-              </button>
+                <button className="reference-add-button" onClick={() => setFeedback('Manual trade entry is ready to be connected')}>
+                  ⊕ &nbsp; Add Manual Trade
+                </button>
+              </div>
             </div>
           </div>
-          <TradeBookTable key={`${activeTab}-${loadedView ?? 'loading'}`} rows={pageRows} sortKey={sortKey} sortDirection={sortDirection} onSort={sortBy} openMenu={openMenu} onOpenMenu={setOpenMenu} onDelete={deleteTrade} showStatus showPlAmt={activeTab !== 'All Trades'} showCmp={activeTab === 'Open Trades'} />
+          {showFilters && <TradeBookFilterPanel values={filters} options={filterOptions} onChange={updateFilter} onClear={() => setFilters(DEFAULT_FILTERS)} />}
+          {feedback && (
+            <div className="alloc-notice trade-book-action-notice" role="status">
+              {feedback}
+              <button onClick={() => setFeedback('')}>×</button>
+            </div>
+          )}
+          <TradeBookTable key={`${activeTab}-${loadedView ?? 'loading'}`} rows={pageRows} sortKey={sortKey} sortDirection={sortDirection} onSort={sortBy} openMenu={openMenu} onOpenMenu={setOpenMenu} onDelete={setDeleteConfirmTrade} showStatus={false} showPlAmt showCmp={activeTab === 'Open Trades'} closedView={activeTab === 'Closed Trades'} openView={activeTab === 'Open Trades'} showTradeId={false} selectionMode={selectionMode} selectedTradeIds={selectedTradeIds} onToggleTrade={toggleTradeSelection} onToggleAll={toggleAllTradeSelection} />
           <TradeBookPagination page={page} pageCount={pageCount} totalCount={virtualTotal} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={updatePageSize} />
         </section>
+        {deleteConfirmTrade && (
+          <div className="allocation-delete-modal-backdrop" role="presentation">
+            <section className="allocation-delete-modal" role="dialog" aria-modal="true" aria-labelledby="trade-book-delete-title">
+              {deletingTrade ? (
+                <>
+                  <div className="allocation-delete-spinner" aria-hidden="true" />
+                  <h2 id="trade-book-delete-title">Deleting trade…</h2>
+                  <p>Please wait while the trade and related records are removed.</p>
+                </>
+              ) : (
+                <>
+                  <div className="allocation-delete-icon"><Trash2 size={20} /></div>
+                  <h2 id="trade-book-delete-title">Delete trade?</h2>
+                  <p>Delete trade {deleteConfirmTrade} and all related merge, split, and allocation records?</p>
+                  <div className="allocation-delete-actions">
+                    <button type="button" className="allocation-delete-cancel" onClick={() => setDeleteConfirmTrade(null)}>Cancel</button>
+                    <button type="button" className="allocation-delete-confirm" onClick={confirmDeleteTrade}>Delete</button>
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(PROJECT_ROOT / "Credentials" / ".env")
+load_dotenv(PROJECT_ROOT / "backend" / ".env")
 
 
 def _load_connection_module():

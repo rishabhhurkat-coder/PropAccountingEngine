@@ -14,6 +14,12 @@
   letter-spacing: -.025em;
 }
 
+.positions-feed-status.error {
+  background: #fff3f4;
+  color: #cc4355;
+  border: 1px solid #ffd3d8;
+}
+
 .positions-feed-status,
 .positions-refresh {
   height: 44px;
@@ -120,6 +126,36 @@
   color: #0b9b60;
 }
 
+/* Annotated Positions typography: 20% larger, with black text only in the selected data columns. */
+.positions-page .positions-table {
+  font-size: 13.8px;
+}
+
+.positions-page .positions-table th {
+  font-size: 12.42px;
+}
+
+.positions-page .positions-table td {
+  font-size: 13.8px;
+}
+
+.positions-page .positions-table td:nth-child(1),
+.positions-page .positions-table td:nth-child(2),
+.positions-page .positions-table td:nth-child(5),
+.positions-page .positions-table td:nth-child(6),
+.positions-page .positions-table td:nth-child(8),
+.positions-page .positions-table td:nth-child(9),
+.positions-page .positions-table td:nth-child(10),
+.positions-page .positions-table td:nth-child(1) *,
+.positions-page .positions-table td:nth-child(2) *,
+.positions-page .positions-table td:nth-child(5) *,
+.positions-page .positions-table td:nth-child(6) *,
+.positions-page .positions-table td:nth-child(8) *,
+.positions-page .positions-table td:nth-child(9) *,
+.positions-page .positions-table td:nth-child(10) * {
+  color: #000;
+}
+
 @media (max-width: 620px) {
   .positions-main {
     padding: 16px 10px 30px;
@@ -133,3 +169,6 @@
     font-size: 28px;
   }
 }
+.positions-table td .positions-strategy.strategy-color-badge{display:inline-flex;width:auto;max-width:170px;align-items:center;gap:6px;color:var(--strategy-color)!important}
+.positions-table td .positions-strategy.strategy-color-badge span,.positions-table td .positions-strategy.strategy-color-badge svg{color:var(--strategy-color)!important;stroke:var(--strategy-color)!important}
+.positions-table td .positions-strategy.strategy-color-badge{border-radius:6px!important}

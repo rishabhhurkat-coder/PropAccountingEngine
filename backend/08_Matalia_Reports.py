@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import importlib.util
 import re
+import shutil
 import sys
 import subprocess
 import threading
@@ -43,7 +44,7 @@ JOBBER_PIPELINE = Path(__file__).resolve()
 JOBBER_CAPTCHA = ROOT / "Other Logs" / "jobber_captcha.png"
 JOBBER_FETCH_STATE: dict[str, Any] = {
     "status": "idle", "message": "Ready", "log": [], "error": None,
-    "started_at": None, "finished_at": None,
+    "started_at": None, "finished_at": None, "captcha_ready_at": None,
 }
 JOBBER_FETCH_PROCESS: Any = None
 JOBBER_FETCH_LOCK = threading.Lock()
@@ -173,7 +174,7 @@ def parse_report(report_html: str, report_day: date, client: str, code: str,
 
 
 def config() -> tuple[str, str, str, str, str, list[str], int]:
-    load_dotenv(ROOT / "Credentials" / ".env")
+    load_dotenv(ROOT / "backend" / ".env")
     client = os.getenv("JOBBER_CLIENT", "SALONI RISHABH HURKAT~A00184")
     if "~" not in client:
         raise RuntimeError("JOBBER_CLIENT must be NAME~CLIENT_CODE")
@@ -197,25 +198,64 @@ def config() -> tuple[str, str, str, str, str, list[str], int]:
 
 def open_authenticated_page(playwright, base: str, username: str, password: str):
     """Use a hidden browser; show only a saved CAPTCHA image for manual entry."""
+    print("Connecting to the Jobber portal…", flush=True)
     profile = ROOT / "Other Logs" / "JobberBrowserProfile"
     captcha_path = ROOT / "Other Logs" / "jobber_captcha.png"
-    browser_root = Path(os.getenv("LOCALAPPDATA", "")) / "ms-playwright"
-    installed = sorted(browser_root.rglob("chrome.exe"), key=lambda p: p.stat().st_mtime, reverse=True) if browser_root.exists() else []
-    launch_options = {"headless": True, "accept_downloads": False, "viewport": {"width": 1280, "height": 900}}
-    if installed:
+    browser_root_value = os.getenv("LOCALAPPDATA", "").strip()
+    browser_root = Path(browser_root_value) / "ms-playwright" if browser_root_value else None
+    installed = (
+        sorted(browser_root.rglob("chrome.exe"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if browser_root and browser_root.exists() else []
+    )
+    launch_options = {
+        "headless": True,
+        "accept_downloads": False,
+        "viewport": {"width": 1280, "height": 900},
+        "args": ["--no-sandbox", "--disable-dev-shm-usage"],
+    }
+    # Local Windows installs use the explicit executable discovered above;
+    # Render uses the browser installed by the Dockerfile or a system binary.
+    executable = os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE", "").strip()
+    if not executable:
+        executable = shutil.which("chromium") or shutil.which("chromium-browser") or ""
+    if executable:
+        launch_options["executable_path"] = executable
+    elif installed:
         launch_options["executable_path"] = str(installed[0])
     context = playwright.chromium.launch_persistent_context(
         str(profile), **launch_options,
     )
     page = context.pages[0] if context.pages else context.new_page()
-    page.goto(base + "/Tplus/", wait_until="domcontentloaded")
+    try:
+        page.goto(base + "/Tplus/", wait_until="domcontentloaded", timeout=30_000)
+    except PlaywrightError as error:
+        context.close()
+        raise RuntimeError(f"Jobber login page did not load within 30 seconds: {error}") from error
     login_box = page.locator("#txtlogin")
     if login_box.count() and login_box.is_visible():
+        print("Jobber login form loaded; preparing CAPTCHA…", flush=True)
         page.locator("#txtlogin").fill(username)
         page.locator("#txtpwd").fill(password)
         captcha_image = page.locator("#imgCaptcha")
-        captcha_image.screenshot(path=str(captcha_path))
-        print(f"\nCAPTCHA image saved to: {captcha_path}")
+        try:
+            # The portal can render the login form before the CAPTCHA request
+            # finishes. Wait briefly for the actual image and fail with a
+            # useful message instead of leaving the API in a silent wait.
+            captcha_image.wait_for(state="visible", timeout=15_000)
+            page.wait_for_function(
+                "selector => { const image = document.querySelector(selector); "
+                "return image && image.complete && image.naturalWidth > 0; }",
+                arg="#imgCaptcha", timeout=15_000,
+            )
+            page.wait_for_timeout(300)
+            captcha_image.screenshot(path=str(captcha_path), timeout=15_000)
+        except PlaywrightError as error:
+            context.close()
+            raise RuntimeError(
+                "Jobber CAPTCHA image did not load within 15 seconds. "
+                "The portal may be unavailable or blocking the Render browser."
+            ) from error
+        print(f"\nCAPTCHA image saved to: {captcha_path}", flush=True)
         try:
             os.startfile(str(captcha_path))
         except AttributeError:
@@ -226,7 +266,7 @@ def open_authenticated_page(playwright, base: str, username: str, password: str)
         page.wait_for_timeout(1200)
     otp = page.locator("#txtOTP2FA")
     if otp.count() and otp.is_visible():
-        print("A 2FA code is required in the Jobber browser window.")
+        print("A 2FA code is required in the Jobber browser window.", flush=True)
         otp.fill(input("Enter 2FA code: ").strip())
         page.locator("#btnContinue").click()
         page.wait_for_timeout(1200)
@@ -356,8 +396,10 @@ def run() -> int:
         total = sum(float(row["total_charges"]) for row in daily_by_date.values())
         print(f"Upserted {len(daily_by_date)} daily charge rows to Supabase; total charges: {total:.2f}")
         return 0
-    except (RuntimeError, ValueError, ImportError, PlaywrightError) as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+    except Exception as exc:
+        # Keep the worker's failure visible to the API watcher instead of
+        # reducing unexpected browser/container errors to only "code 1".
+        print(f"ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
 
 TABLE = 'matalia."jobber_daily_charges"'
@@ -452,7 +494,9 @@ def matalia_charges(from_date: str | None = None, to_date: str | None = None) ->
                 "report_date": report_date,
                 "nse_charges": f"{float(row.get('nse_charges') or 0):.2f}",
                 "bse_charges": f"{float(row.get('bse_charges') or 0):.2f}",
+                "gross_ledger_amount": f"{float(row.get('gross_profit_loss') or 0):.2f}",
                 "total_charges": f"{float(row.get('total_charges') or 0):.2f}",
+                "net_ledger_amount": f"{float(row.get('net_profit_loss') or 0):.2f}",
                 "reconciliation_status": row.get("reconciliation_status") or "matched",
                 "fetched_at": row.get("fetched_at").isoformat() if hasattr(row.get("fetched_at"), "isoformat") else str(row.get("fetched_at") or ""),
             })
@@ -495,19 +539,25 @@ def _watch_fetch_process(process: Any) -> None:
                 if "CAPTCHA image saved to:" in message:
                     JOBBER_FETCH_STATE["status"] = "waiting_captcha"
                     JOBBER_FETCH_STATE["message"] = "CAPTCHA is ready. Enter the text shown below."
+                    JOBBER_FETCH_STATE["captcha_ready_at"] = datetime.now().isoformat(timespec="seconds")
                 elif message.startswith("ERROR:"):
                     JOBBER_FETCH_STATE["status"] = "error"
                     JOBBER_FETCH_STATE["error"] = message
     finally:
         return_code = process.wait()
-        JOBBER_CAPTCHA.unlink(missing_ok=True)
         with JOBBER_FETCH_LOCK:
+            waiting_for_captcha = JOBBER_FETCH_STATE.get("status") == "waiting_captcha"
             if JOBBER_FETCH_STATE["status"] not in {"error", "cancelled"}:
                 JOBBER_FETCH_STATE["status"] = "completed" if return_code == 0 else "error"
             JOBBER_FETCH_STATE["finished_at"] = datetime.now().isoformat(timespec="seconds")
             if return_code != 0 and not JOBBER_FETCH_STATE.get("error"):
                 JOBBER_FETCH_STATE["error"] = f"Pipeline exited with code {return_code}."
             JOBBER_FETCH_PROCESS = None
+        # Keep the image available while the UI is waiting for the operator.
+        # Once the worker has completed, failed, or been cancelled it is safe
+        # to remove the temporary file.
+        if not waiting_for_captcha:
+            JOBBER_CAPTCHA.unlink(missing_ok=True)
 
 
 @router.post("/api/matalia-charges/fetch/start")
@@ -526,6 +576,7 @@ def start_matalia_fetch(payload: MataliaFetchRequest) -> JSONResponse:
             if JOBBER_FETCH_PROCESS is not None and JOBBER_FETCH_PROCESS.poll() is None:
                 return JSONResponse(status_code=409, content={"success": False, "message": "A Matalia report fetch is already running."})
             env = os.environ.copy()
+            env["PYTHONUNBUFFERED"] = "1"
             env["JOBBER_EXISTING_ACTION"] = action or "refetch"
             if not env.get("JOBBER_USERNAME"):
                 env["JOBBER_USERNAME"] = "A00184"
@@ -540,7 +591,8 @@ def start_matalia_fetch(payload: MataliaFetchRequest) -> JSONResponse:
             JOBBER_FETCH_PROCESS = process
             JOBBER_FETCH_STATE.update({
                 "status": "running", "message": "Starting Matalia report fetch…", "log": [],
-                "error": None, "started_at": datetime.now().isoformat(timespec="seconds"), "finished_at": None,
+                "error": None, "started_at": datetime.now().isoformat(timespec="seconds"),
+                "finished_at": None, "captcha_ready_at": None,
             })
             assert process.stdin is not None
             process.stdin.write(f"{start.strftime('%d-%m-%Y')}\n")
@@ -555,7 +607,14 @@ def start_matalia_fetch(payload: MataliaFetchRequest) -> JSONResponse:
 @router.get("/api/matalia-charges/fetch/status")
 def matalia_fetch_status() -> JSONResponse:
     with JOBBER_FETCH_LOCK:
-        return JSONResponse(status_code=200, content={"success": True, **JOBBER_FETCH_STATE, "captcha_available": JOBBER_CAPTCHA.exists()})
+        payload = {"success": True, **JOBBER_FETCH_STATE, "captcha_available": JOBBER_CAPTCHA.exists()}
+        started_at = JOBBER_FETCH_STATE.get("started_at")
+        if started_at:
+            try:
+                payload["elapsed_seconds"] = max(0, int((datetime.now() - datetime.fromisoformat(started_at)).total_seconds()))
+            except ValueError:
+                payload["elapsed_seconds"] = None
+        return JSONResponse(status_code=200, content=payload)
 
 
 @router.get("/api/matalia-charges/fetch/captcha")

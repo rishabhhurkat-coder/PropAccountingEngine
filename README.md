@@ -85,6 +85,7 @@ Are you building a trading workflow, internal operations platform, or data-heavy
 
 - **Founder and builder:** [Rishabh Hurkat](https://github.com/rishabhhurkat-coder)
 - **H&L Software:** [hnlsoftware.in](https://hnlsoftware.in)
+- **Email:** [rishabhhurkat@gmail.com](mailto:rishabhhurkat@gmail.com)
 - **Project inquiries:** [Use the H&L contact page](https://hnlsoftware.in/contact)
 - **Technical discussion:** [Open a GitHub issue](https://github.com/rishabhhurkat-coder/PropAccountingEngine/issues)
 

@@ -10,6 +10,12 @@
 
 The H&L Prop Trading Engine is a product-focused system for turning trading activity into a clear, operational view of positions, allocations, performance, and reporting. It is designed as an independent deployable product within the wider H&L Software portfolio.
 
+## Product preview
+
+![H&L Prop Trading Engine dashboard preview](frontend/src/assets/prop-engine-preview.png)
+
+The preview illustrates the product direction: a single operational view for performance, live positions, invoices, customers, and strategy allocation.
+
 ## Why this project matters
 
 Trading workflows become difficult to operate when execution data, account allocation, live positions, and reporting are spread across disconnected tools. This project brings those workflows together behind a structured frontend and a dedicated FastAPI backend.

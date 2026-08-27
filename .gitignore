@@ -4,6 +4,10 @@ __pycache__/
 venv/
 
 # Secrets and local configuration
+Credentials/*.enc
+Credentials/*.gpg
+Credentials/*.key
+Credentials/.env
 backend/.env
 backend/.env.decrypted
 backend/*.enc
